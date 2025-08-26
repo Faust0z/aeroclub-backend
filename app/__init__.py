@@ -11,7 +11,6 @@ def create_app():
     
     db.init_app(app)
 
-    # Importa rutas y realiza otras configuraciones necesarias
     from app.routes.usuarios import usuarios_bp
     app.register_blueprint(usuarios_bp,url_prefix='/usuarios')
 

@@ -7,8 +7,6 @@ class CuentaCorriente(db.Model):
     saldo_cuenta = db.Column(db.Float, nullable=False)
     usuarios_id = db.Column(db.Integer, ForeignKey('USUARIOS.id_usuarios'), nullable=False)
 
-
-
     def __init__(self, id_cuenta_corriente ,saldo_cuenta, usuarios_id):
         self.id_cuenta_corriente = id_cuenta_corriente
         self.saldo_cuenta = saldo_cuenta

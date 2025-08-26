@@ -1,8 +1,7 @@
 from flask import Blueprint, request, jsonify
-from app.models.aeronave_models import Aeronaves
-from app import db
 from app.utils.Security import Security
 from app.controllers.aeronaves import AeronavesController
+
 
 aeronaves_bp = Blueprint('aeronaves', __name__)
 
@@ -40,6 +39,7 @@ def get_aeronave_by_matricula(matricula):
         print(ex)
         return jsonify({'message': 'ERROR', 'success': False})
 
+
 @aeronaves_bp.route('/', methods=['POST'])
 def create_aeronave():
     try:
@@ -54,6 +54,7 @@ def create_aeronave():
         print(ex)
         return jsonify({'message': 'An error occurred', 'success': False})
 
+
 @aeronaves_bp.route('/<matricula>', methods=['PATCH'])
 def update_aeronave(matricula):
     try:
@@ -67,6 +68,7 @@ def update_aeronave(matricula):
     except Exception as ex:
         print(ex)
         return jsonify({'message': 'An error occurred', 'success': False})
+
 
 @aeronaves_bp.route('/<matricula>', methods=['DELETE'])
 def delete_aeronave(matricula):

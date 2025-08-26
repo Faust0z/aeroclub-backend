@@ -1,10 +1,7 @@
 from app.models.user_model import Usuarios
-#from app.models.user_roles import Roles
-#from app.models.user_tiene_roles import UsuarioTieneRoles
 from app.controllers.cuentaCorrienteController import cuentaCorrienteController
 from sqlalchemy.orm import joinedload
 from app import db
-from flask import jsonify
 from datetime import datetime
 from operator import or_
 from app.models.user_roles import Roles
@@ -12,23 +9,14 @@ from app.models.user_tiene_roles import UsuarioTieneRoles
 
 
 class UsuariosController:
-    
     def __init__(self):
         pass 
 
     def obtenerUsuarioPorEmail(self,mail):
-
-        # Cargar la relación 'roles' utilizando joinedload
-        #userMalFormato = db.session.query(Usuarios).filter(Usuarios.email == mail).options(joinedload(Usuarios.roles)).first()
-
-        #userMalFormato = db.session.execute(db.select(Usuarios).filter_by(email=mail)).scalar_one()
-        #usuario = db.session.query(Usuarios).filter(Usuarios.email == mail)
-   
          # Cargar la relación 'roles' utilizando joinedload
         userMalFormato = db.session.query(Usuarios).filter_by(email=mail).options(joinedload(Usuarios.roles)).first()
 
         if not userMalFormato:
-       
             return  False   
 
         usuario = {'id_usuarios': userMalFormato.id_usuarios, 
@@ -51,7 +39,6 @@ class UsuariosController:
                 ] 
                      
                     }
-   
         return usuario
 
     def obtenerUsuarios(self):
@@ -81,9 +68,7 @@ class UsuariosController:
         return user_list
         
     def crearUsuario(self, data):
-        
         try:
-
             id_usuarios = data.get('id_usuarios')
             nombre = data.get('nombre')
             apellido = data.get('apellido')
@@ -112,26 +97,20 @@ class UsuariosController:
   
            #se crea la cuenta del usuario
             cuentaCorrienteController.crear_cuenta(cuentaCorrienteController,usuario.id_usuarios)
-            
             return True
-        
         except Exception as ex:
             print(ex.args)
             return False
 
-
-
     def editarUsuario(self, email, data):
-       
         #solo trae el dicc y no la clase de la bd
         user = self.obtenerUsuarioPorEmail(email)
         #te trae un usuario de la bd
         usuario = Usuarios.query.get(user["id_usuarios"])
 
         if not usuario:
-        
             return  False
-        
+
         if 'nombre' in data:
             usuario.nombre = data['nombre']
         if 'apellido' in data:
@@ -159,37 +138,26 @@ class UsuariosController:
         db.session.commit()
         return True
  
-        
-
     def eliminarUsuario(self, email):
-        
             user = self.obtenerUsuarioPorEmail(email)
-            #te trae un usuario de la bd
             usuario = Usuarios.query.get(user["id_usuarios"])
         
-            if not Usuarios:
-            
+            if not usuario:
                 return  False
-            #para "borrarlo"
+            
             usuario.estado_hab_des = 0
-
             db.session.commit()
             return True
 
-
     def obtenerUsuarioPorNombre(self,nombre):
-    
             usuarioNombre=db.session.query(Usuarios).filter(or_(Usuarios.nombre.like(f'%{nombre}%'), Usuarios.apellido.like(f'%{nombre}%'))).all()
-            
             if not usuarioNombre:
-    
                 return  False   
     
             resultados_json = [{'id_usuarios': usuario.id_usuarios, 'nombre': usuario.nombre, 'apellido': usuario.apellido,'email': usuario.email} for usuario in usuarioNombre]
             
             return resultados_json
     
-     #Obtener todos los Intructores
     def obtenerInstructores(self):
         try:
             # Obtener id_usuarios de UsuariosTienenRol con id_roles == 2
