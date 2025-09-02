@@ -2,8 +2,6 @@
 import datetime
 import jwt
 import pytz
-import traceback
-from dotenv import load_dotenv
 import os
 
 
@@ -12,7 +10,7 @@ class Security():
     load_dotenv()
 
     # Ahora puedes acceder a las variables de entorno como si estuvieran definidas en el sistema
-    token_secret = os.getenv('TOKEN_SECRET')
+    token_secret = os.getenv('TOKEN_SECRET') # TODO: just import them from settings.py
      #poner la key en el .env mas adelante
     secret = token_secret
     tz = pytz.timezone("America/Argentina/Buenos_Aires")

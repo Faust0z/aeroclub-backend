@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.utils.Security import Security
-from app.controllers.aeronaves import AeronavesController
-
+from app.controllers.planes import AeronavesController
 
 aeronaves_bp = Blueprint('aeronaves', __name__)
 
@@ -34,7 +33,7 @@ def get_aeronave_by_matricula(matricula):
         if aeronave:
             return jsonify({'respuesta': aeronave, 'success': True})
         else:
-            jsonify({'message': 'No se encontro la aeronave', 'success': False})    
+            jsonify({'message': 'No se encontro la aeronave', 'success': False})
     except Exception as ex:
         print(ex)
         return jsonify({'message': 'ERROR', 'success': False})
@@ -49,7 +48,7 @@ def create_aeronave():
         if respuesta:
             return jsonify({'message': 'Aeronave created successfully', 'success': True}), 201
         else:
-            return jsonify({'message': 'Some data is invalid','success': False}), 400
+            return jsonify({'message': 'Some data is invalid', 'success': False}), 400
     except Exception as ex:
         print(ex)
         return jsonify({'message': 'An error occurred', 'success': False})
@@ -62,7 +61,7 @@ def update_aeronave(matricula):
         aeronave_controller = AeronavesController()
         respuesta = aeronave_controller.editarAeronave(matricula, data)
         if respuesta:
-            return jsonify({'message': 'Aeronave updated successfully',"success":True})
+            return jsonify({'message': 'Aeronave updated successfully', "success": True})
         else:
             return jsonify({'message': 'Aeronave not found'}), 404
     except Exception as ex:
@@ -76,7 +75,7 @@ def delete_aeronave(matricula):
         aeronave_controller = AeronavesController()
         respuesta = aeronave_controller.eliminarAeronave(matricula)
         if respuesta:
-            return jsonify({'message': 'Aeronave deleted successfully',"success":True})
+            return jsonify({'message': 'Aeronave deleted successfully', "success": True})
         else:
             return jsonify({'message': 'Aeronave not found'}), 404
     except Exception as ex:

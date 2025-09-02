@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.utils.Security import Security
-from app.controllers.cuentaCorrienteController import cuentaCorrienteController
-
+from app.controllers.balances import cuentaCorrienteController
 
 cuentaCorriente_bp = Blueprint("cuentaCorriente", __name__)
 

@@ -1,10 +1,10 @@
-from app.models.itinerarios_model import Itinerarios
-from app.models.itinerarios_model import ItinerarioTieneCodigosAeropuertos
-from app.models.itinerarios_model import CodigoAeropuerto
-from app.models.itinerarioTipos import ItinerarioTipos
-from app.models.aeronave_models import Aeronaves
+from app.models.itineraries import Itineraries
+from app.models.associations import ItineraryHasAirportCodes
+from app.models.itineraries import AirportCodes
+from app.models.itinerary_types import ItineraryTypes
+from app.models.planes import Planes
 from sqlalchemy.orm import joinedload
-from app import db
+from ..extensions import db
 
 
 class ItinerariosController:
@@ -39,46 +39,46 @@ class ItinerariosController:
             return False
 
     def crearItinerario(
-        self,
-        horaSalida,
-        codAeroSalida,
-        horaLlegada,
-        codAeroLlegada,
-        observaciones,
-        cantAterrizajes,
-        matricula,
-        tipoItinerario,
-        idRecibo,
+            self,
+            horaSalida,
+            codAeroSalida,
+            horaLlegada,
+            codAeroLlegada,
+            observaciones,
+            cantAterrizajes,
+            matricula,
+            tipoItinerario,
+            idRecibo,
     ):
         try:
             # chequeando el tipo de itinerario y los codigos del aeropuerto
             if self.__chequearTipoItinerario(
-                tipoItinerario
+                    tipoItinerario
             ) & self.__chequearCodigosAeropuertos(codAeroLlegada, codAeroSalida):
                 # aca me traigo el tipoItinerario para obtener su id
                 tipoItinerario = (
-                    db.session.query(ItinerarioTipos)
+                    db.session.query(ItineraryTypes)
                     .filter_by(tipo=tipoItinerario)
                     .first()
                 )
                 # aca me traigo un codigo aeropuerto para obtener su id
                 codigosAeropuertosLlegada = (
-                    db.session.query(CodigoAeropuerto)
+                    db.session.query(AirportCodes)
                     .filter_by(codigo_aeropuerto=codAeroLlegada)
                     .first()
                 )
                 # aca me traigo un codigo aeropuerto para obtener su id
                 codigosAeropuertosSalida = (
-                    db.session.query(CodigoAeropuerto)
+                    db.session.query(AirportCodes)
                     .filter_by(codigo_aeropuerto=codAeroSalida)
                     .first()
                 )
                 # aca me traigo la aeronave para obtener el id
                 aeronave = (
-                    db.session.query(Aeronaves).filter_by(matricula=matricula).first()
+                    db.session.query(Planes).filter_by(matricula=matricula).first()
                 )
                 # creo el itinerario
-                itinerario = Itinerarios(
+                itinerario = Itineraries(
                     None,
                     horaSalida,
                     horaLlegada,
@@ -92,7 +92,7 @@ class ItinerariosController:
                 db.session.commit()
 
                 itinerarioTieneCodigosAeropuertosUno = (
-                    ItinerarioTieneCodigosAeropuertos(
+                    ItineraryHasAirportCodes(
                         None,
                         itinerario.id_itinerarios,
                         codigosAeropuertosLlegada.id_codigos_aeropuertos,
@@ -103,7 +103,7 @@ class ItinerariosController:
                 db.session.commit()
 
                 itinerarioTieneCodigosAeropuertosDos = (
-                    ItinerarioTieneCodigosAeropuertos(
+                    ItineraryHasAirportCodes(
                         None,
                         itinerario.id_itinerarios,
                         codigosAeropuertosSalida.id_codigos_aeropuertos,

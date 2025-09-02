@@ -1,13 +1,13 @@
 from flask import Blueprint, request, jsonify
 from app.utils.Security import Security
-from app.controllers.usuarios import UsuariosController
+from app.controllers.users import UsuariosController
 from app.controllers.roles import RolesController
 
 auth_bp = Blueprint('auth', __name__)
 
+
 @auth_bp.route('', methods=['POST'])
 def authCrearYDevolverToken():
-
     try:
         """
         data = request.get_json()
@@ -20,7 +20,7 @@ def authCrearYDevolverToken():
         """
         data = request.get_json()
         email = data.get("email")
-        
+
         usuarioController = UsuariosController()
         respuestaCrearUsuario = usuarioController.crearUsuario(data)
 
@@ -43,7 +43,7 @@ def authCrearYDevolverToken():
 @auth_bp.route('/<email>', methods=['GET'])
 def chequearSiExisteUsuario(email):
     try:
-        usuarioController = UsuariosController() 
+        usuarioController = UsuariosController()
         getUsuario = usuarioController.obtenerUsuarioPorEmail(email)
 
         if not getUsuario:
@@ -59,14 +59,14 @@ def chequearSiExisteUsuario(email):
 @auth_bp.route('', methods=['GET'])
 def resolverToken():
     has_access = Security.verify_token(request.headers)
-    
+
     if has_access:
         try:
-            dataToken = Security.resolvertoken(request.headers)    
+            dataToken = Security.resolvertoken(request.headers)
             if dataToken:
                 return jsonify({'dataToken': dataToken, 'success': True})
             else:
-                return jsonify({'message': 'No existe un token valido', 'success': False})   
+                return jsonify({'message': 'No existe un token valido', 'success': False})
         except Exception as ex:
             print(ex)
             return jsonify({'message': 'ocurrio un error', 'success': False})

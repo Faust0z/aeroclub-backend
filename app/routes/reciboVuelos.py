@@ -1,9 +1,7 @@
 from flask import Blueprint, request, jsonify
 from app.controllers.recibosVuelos import RecibosController
-from app.controllers.transacciones import TransaccionesController
-from app.controllers.recibos_pdf import ReciboPDF
+from app.controllers.transactions import TransaccionesController
 from app.utils.Security import Security
-
 
 reciboVuelos_bp = Blueprint("recibo-vuelos", __name__)
 

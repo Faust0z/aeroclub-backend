@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from app.controllers.roles import RolesController
 from app.utils.Security import Security
-from app.controllers.usuarios import UsuariosController
+from app.controllers.users import UsuariosController
 
 roles_bp = Blueprint("roles", __name__)
 

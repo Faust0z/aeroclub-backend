@@ -1,12 +1,11 @@
-from app.models.user_model import Recibos
-from app.models.recibos_tipos import Recibos_tipos
-from app.models.user_model import Usuarios
-from app.controllers.cuentaCorrienteController import cuentaCorrienteController
-from app.models.user_model import UsuariosTienenRecibos
-from app.models.user_roles import Roles
-from app.models.user_tiene_roles import UsuarioTieneRoles
-from app.models.transacciones import Transacciones
-from app import db
+from app.models.invoices import Invoices
+from app.models.invoice_types import receipt_types
+from app.models.users import Users
+from app.controllers.balances import cuentaCorrienteController
+from app.models.roles import Roles
+from app.models.associations import UsersHaveInvoices, UsersHaveRoles
+from app.models.transactions import Transactions
+from ..extensions import db
 from datetime import datetime
 
 
@@ -17,11 +16,11 @@ class RecibosCombustibleController:
     def crearRecibo(self, emailGestor, monto, observaciones, tipoPago, motivo):
         try:
             cliente = (
-                db.session.query(Usuarios)
+                db.session.query(Users)
                 .filter_by(email="usuariocompracombustible@aero.com")
                 .first()
             )
-            gestor = db.session.query(Usuarios).filter_by(email=emailGestor).first()
+            gestor = db.session.query(Users).filter_by(email=emailGestor).first()
 
             rolGestor = db.session.query(Roles).filter_by(tipo="Gestor").first()
             gestorTieneRol = (
@@ -46,11 +45,11 @@ class RecibosCombustibleController:
 
             fecha_actual = datetime.now()
             fecha = (
-                str(fecha_actual.year)
-                + "-"
-                + str(fecha_actual.month)
-                + "-"
-                + str(fecha_actual.day)
+                    str(fecha_actual.year)
+                    + "-"
+                    + str(fecha_actual.month)
+                    + "-"
+                    + str(fecha_actual.day)
             )
 
             if monto > 0:

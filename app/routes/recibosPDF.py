@@ -1,7 +1,5 @@
 from flask import Blueprint, request, jsonify
 from app.utils.Security import Security
-from app.controllers.recibos_pdf import ReciboPDF
-
 
 reciboPDF_bp = Blueprint("recibo-pdf", __name__)
 

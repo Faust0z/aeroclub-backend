@@ -1,6 +1,6 @@
-from app.models.aeronave_models import Aeronaves
-from app.controllers.estadosAeronaves import EstadoAeronavesController
-from app import db
+from app.models.planes import Planes
+from app.controllers.plane_status import EstadoAeronavesController
+from ..extensions import db
 
 
 class AeronavesController:
@@ -9,7 +9,7 @@ class AeronavesController:
 
     def obtenerAeronavePorMatricula(self, matricula):
         try:
-            aeronave = Aeronaves.query.filter_by(matricula=matricula).first()
+            aeronave = Planes.query.filter_by(matricula=matricula).first()
 
             if aeronave:
                 estadoFound = EstadoAeronavesController.obtenerEstadosAeronaveById(
@@ -36,13 +36,9 @@ class AeronavesController:
             return False
 
     def obtenerAeronaves(self):
-        idDeshabilitado = EstadoAeronavesController.obtenerIdEstadoDeshabilitada(
-            EstadoAeronavesController
-        )
+        idDeshabilitado = EstadoAeronavesController.obtenerIdEstadoDeshabilitada(EstadoAeronavesController)
 
-        aeronaves = Aeronaves.query.filter(
-            Aeronaves.estados_aeronaves_id != idDeshabilitado.get("id")
-        ).all()
+        aeronaves = Planes.query.filter(Planes.estados_aeronaves_id != idDeshabilitado.get("id")).all()
         aeronave_list = []
 
         for aeronave in aeronaves:
@@ -65,13 +61,13 @@ class AeronavesController:
 
     # al estar cargada no lo modificamos asi que no funciona como deberia en la db completa
     def crearAeronave(self, data):
-        aeronave = Aeronaves(**data)
+        aeronave = Planes(**data)
         db.session.add(aeronave)
         db.session.commit()
         return True
 
     def editarAeronave(self, matricula, data):
-        aeronave = Aeronaves.query.filter_by(matricula=matricula).first()
+        aeronave = Planes.query.filter_by(matricula=matricula).first()
         if aeronave:
             for key, value in data.items():
                 setattr(aeronave, key, value)
@@ -80,7 +76,7 @@ class AeronavesController:
         return False
 
     def eliminarAeronave(self, matricula):
-        aeronave = Aeronaves.query.filter_by(matricula=matricula).first()
+        aeronave = Planes.query.filter_by(matricula=matricula).first()
         idDeshabilitado = EstadoAeronavesController.obtenerIdEstadoDeshabilitada(
             EstadoAeronavesController
         )

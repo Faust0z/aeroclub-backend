@@ -1,21 +1,20 @@
-from app.models.cuenta_corriente import CuentaCorriente
-from app.controllers.transacciones import TransaccionesController
-from app import db
+from app.models.balances import Balances
+from app.controllers.transactions import TransaccionesController
+from ..extensions import db
 
 
-# Una Cuenta Corriente no se deberá deshabilitar, a su vez tampoco se podrá crear, se inicializará con el valor de una transacción...
-class cuentaCorrienteController:
+class cuentaCorrienteController:  # Delete this class stuff
     def _init_(self):
         pass
 
     def crear_cuenta(self, idUsuario):
-        cuentaCorriente = CuentaCorriente(0, 0, idUsuario)
+        cuentaCorriente = Balances(0, 0, idUsuario)
         db.session.add(cuentaCorriente)
         db.session.commit()
 
     def obtenerCuentaCorriente(self, idAsociado):
         try:
-            cuantaCorrienteAsociado = CuentaCorriente.query.filter_by(
+            cuantaCorrienteAsociado = Balances.query.filter_by(
                 usuarios_id=idAsociado
             ).first()
             if cuantaCorrienteAsociado:
@@ -27,7 +26,7 @@ class cuentaCorrienteController:
             return False
 
     def obtener_saldo(self, usuario_id):
-        cuenta_corriente = CuentaCorriente.query.filter_by(
+        cuenta_corriente = Balances.query.filter_by(
             usuarios_id=usuario_id
         ).first()
         if cuenta_corriente:
@@ -35,7 +34,7 @@ class cuentaCorrienteController:
         return False
 
     def actualizar_saldo(self, usuario_id, monto, fecha, motivo, tipoPago):
-        cuenta_corriente = CuentaCorriente.query.filter_by(
+        cuenta_corriente = Balances.query.filter_by(
             usuarios_id=usuario_id
         ).first()
 
@@ -51,7 +50,7 @@ class cuentaCorrienteController:
         if (cuenta_corriente) and (transaccion):
             print(f"transaccion: {transaccion.monto}")
             cuenta_corriente.saldo_cuenta = (
-                cuenta_corriente.saldo_cuenta + transaccion.monto
+                    cuenta_corriente.saldo_cuenta + transaccion.monto
             )
             db.session.commit()
             return transaccion
@@ -59,7 +58,7 @@ class cuentaCorrienteController:
 
     def retrotraer_pago(self, monto, id):
         cuenta_corriente = (
-            db.session.query(CuentaCorriente).filter_by(usuarios_id=id).first()
+            db.session.query(Balances).filter_by(usuarios_id=id).first()
         )
         monto = monto * (-1)
         print(f"monto: {monto}")
@@ -70,3 +69,7 @@ class cuentaCorrienteController:
             db.session.commit()
             return True
         return False
+
+    # A balance can't be deleted, only disabled
+    def delete_account(self):
+        pass

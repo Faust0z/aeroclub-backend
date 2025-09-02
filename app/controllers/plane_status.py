@@ -1,5 +1,5 @@
-from app.models.estados_aeronaves import EstadosAeronaves
-from app import db
+from app.models.plane_status import PlaneStatus
+from ..extensions import db
 
 
 class EstadoAeronavesController:
@@ -7,7 +7,7 @@ class EstadoAeronavesController:
         pass
 
     def obtenerEstadosAeronaveById(self, id):
-        estadoFound = EstadosAeronaves.query.get(id)
+        estadoFound = PlaneStatus.query.get(id)
         if estadoFound:
             estadoSend = {
                 "estado": estadoFound.estado,
@@ -17,7 +17,7 @@ class EstadoAeronavesController:
 
     def obtenerIdEstadoDeshabilitada(self):
         estadoAeroFound = (
-            db.session.query(EstadosAeronaves).filter_by(estado="Deshabilitada").first()
+            db.session.query(PlaneStatus).filter_by(estado="Deshabilitada").first()
         )
 
         if estadoAeroFound:

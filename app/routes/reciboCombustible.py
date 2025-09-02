@@ -1,8 +1,7 @@
 from flask import Blueprint, request, jsonify
-from app.controllers.recibosCombustible import RecibosCombustibleController
-from app.controllers.transacciones import TransaccionesController
+from app.controllers.fuel_invoices import RecibosCombustibleController
+from app.controllers.transactions import TransaccionesController
 from app.utils.Security import Security
-
 
 reciboCombustible_bp = Blueprint("recibo-combustible", __name__)
 

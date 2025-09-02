@@ -1,9 +1,8 @@
 from flask import Blueprint, request, jsonify
 from app.utils.Security import Security
-from app.controllers.transacciones import TransaccionesController
-from app.controllers.cuentaCorrienteController import cuentaCorrienteController
-from app.models.cuenta_corriente import CuentaCorriente
-
+from app.controllers.transactions import TransaccionesController
+from app.controllers.balances import cuentaCorrienteController
+from app.models.balances import Balances
 
 transacciones_bp = Blueprint("transacciones", __name__)
 

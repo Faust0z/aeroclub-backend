@@ -1,8 +1,8 @@
-from app.models.user_model import Usuarios
-from app.models.user_roles import Roles
-from app.controllers.usuarios import UsuariosController
-from app.models.user_tiene_roles import UsuarioTieneRoles
-from app import db
+from app.models.users import Users
+from app.models.roles import Roles
+from app.controllers.users import UsuariosController
+from app.models.associations import UsersHaveRoles
+from ..extensions import db
 
 
 class RolesController:
@@ -42,7 +42,7 @@ class RolesController:
                     ).scalar_one()
                     # creo el usuarioTieneRoles
 
-                    usuarioTieneRoles = UsuarioTieneRoles(
+                    usuarioTieneRoles = UsersHaveRoles(
                         0, userDictionary.get("id_usuarios"), rolDictionary.id_roles
                     )
                     db.session.add(usuarioTieneRoles)
@@ -62,7 +62,7 @@ class RolesController:
         try:
             if self.__chequearRolesPermitidos(data.get("rol")):
                 if self.__chequearArrayRoles(
-                    userDictionary.get("roles"), data.get("rol")
+                        userDictionary.get("roles"), data.get("rol")
                 ):
                     rolData = data.get("rol")
                     id_usuario = userDictionary.get("id_usuarios")
@@ -73,7 +73,7 @@ class RolesController:
                     rol_id = rolEncontrado.id_roles
 
                     usuarioTieneRoles = db.session.execute(
-                        db.select(UsuarioTieneRoles).filter_by(
+                        db.select(UsersHaveRoles).filter_by(
                             usuarios_id=id_usuario, roles_id=rol_id
                         )
                     ).scalar_one()
@@ -99,7 +99,7 @@ class RolesController:
             ).scalar_one()
             # creo el usuarioTieneRoles
 
-            usuarioTieneRoles = UsuarioTieneRoles(
+            usuarioTieneRoles = UsersHaveRoles(
                 0, userDictionary.get("id_usuarios"), rolDictionary.id_roles
             )
 
