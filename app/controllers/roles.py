@@ -1,7 +1,6 @@
 from app.models.users import Users
 from app.models.roles import Roles
 from app.controllers.users import UsuariosController
-from app.models.associations import UsersHaveRoles
 from ..extensions import db
 
 
@@ -42,10 +41,11 @@ class RolesController:
                     ).scalar_one()
                     # creo el usuarioTieneRoles
 
-                    usuarioTieneRoles = UsersHaveRoles(
-                        0, userDictionary.get("id_usuarios"), rolDictionary.id_roles
-                    )
-                    db.session.add(usuarioTieneRoles)
+                    # TODO: this broke down when the associations where changed to Tables
+                    # usuarioTieneRoles = UsersHaveRoles(
+                    #    0, userDictionary.get("id_usuarios"), rolDictionary.id
+                    # )
+                    # db.session.add(usuarioTieneRoles)
                     db.session.commit()
                     return 3
             else:
@@ -70,15 +70,16 @@ class RolesController:
                         db.select(Roles).filter_by(tipo=rolData)
                     ).scalar_one()
 
-                    rol_id = rolEncontrado.id_roles
+                    rol_id = rolEncontrado.id
 
-                    usuarioTieneRoles = db.session.execute(
-                        db.select(UsersHaveRoles).filter_by(
-                            usuarios_id=id_usuario, roles_id=rol_id
-                        )
-                    ).scalar_one()
-
-                    db.session.delete(usuarioTieneRoles)
+                    # TODO: this broke down when the associations where changed to Tables
+                    #                    usuarioTieneRoles = db.session.execute(
+                    #                        db.select(UsersHaveRoles).filter_by(
+                    #                            usuarios_id=id_usuario, roles_id=rol_id
+                    #                       )
+                    #                   ).scalar_one()
+                    #
+                    #                    db.session.delete(usuarioTieneRoles)
                     db.session.commit()
                     return 2
                 else:
@@ -98,12 +99,13 @@ class RolesController:
                 db.select(Roles).filter_by(tipo="Asociado")
             ).scalar_one()
             # creo el usuarioTieneRoles
+            # TODO: this broke down when the associations where changed to Tables
 
-            usuarioTieneRoles = UsersHaveRoles(
-                0, userDictionary.get("id_usuarios"), rolDictionary.id_roles
-            )
+            #            usuarioTieneRoles = UsersHaveRoles(
+            #                0, userDictionary.get("id_usuarios"), rolDictionary.id
+            #            )
 
-            db.session.add(usuarioTieneRoles)
+            #            db.session.add(usuarioTieneRoles)
             db.session.commit()
 
             return True

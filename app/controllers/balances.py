@@ -18,7 +18,7 @@ class cuentaCorrienteController:  # Delete this class stuff
                 usuarios_id=idAsociado
             ).first()
             if cuantaCorrienteAsociado:
-                return cuantaCorrienteAsociado.id_cuenta_corriente
+                return cuantaCorrienteAsociado.id
             else:
                 return False
         except Exception as ex:
@@ -30,7 +30,7 @@ class cuentaCorrienteController:  # Delete this class stuff
             usuarios_id=usuario_id
         ).first()
         if cuenta_corriente:
-            return cuenta_corriente.saldo_cuenta, True
+            return cuenta_corriente.balance, True
         return False
 
     def actualizar_saldo(self, usuario_id, monto, fecha, motivo, tipoPago):
@@ -44,13 +44,13 @@ class cuentaCorrienteController:  # Delete this class stuff
             fecha,
             motivo,
             tipoPago,
-            cuenta_corriente.id_cuenta_corriente,
+            cuenta_corriente.id,
         )
         print(f"transaccion: {transaccion}")
         if (cuenta_corriente) and (transaccion):
-            print(f"transaccion: {transaccion.monto}")
-            cuenta_corriente.saldo_cuenta = (
-                    cuenta_corriente.saldo_cuenta + transaccion.monto
+            print(f"transaccion: {transaccion.amount}")
+            cuenta_corriente.balance = (
+                    cuenta_corriente.balance + transaccion.amount
             )
             db.session.commit()
             return transaccion
@@ -62,10 +62,10 @@ class cuentaCorrienteController:  # Delete this class stuff
         )
         monto = monto * (-1)
         print(f"monto: {monto}")
-        print(f"cuenta corriente: {cuenta_corriente.saldo_cuenta}")
+        print(f"cuenta corriente: {cuenta_corriente.balance}")
         if cuenta_corriente:
-            cuenta_corriente.saldo_cuenta = cuenta_corriente.saldo_cuenta + monto
-            print(f"nuevo saldo: {cuenta_corriente.saldo_cuenta}")
+            cuenta_corriente.balance = cuenta_corriente.balance + monto
+            print(f"nuevo saldo: {cuenta_corriente.balance}")
             db.session.commit()
             return True
         return False

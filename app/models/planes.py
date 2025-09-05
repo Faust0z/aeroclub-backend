@@ -1,5 +1,4 @@
 from ..extensions import db
-from sqlalchemy import ForeignKey
 
 
 class Planes(db.Model):
@@ -12,15 +11,10 @@ class Planes(db.Model):
     acquisition_date: db.Mapped[db.Date] = db.mapped_column(db.Date, nullable=False)
     consumption_per_hour: db.Mapped[int] = db.mapped_column(db.Integer, nullable=False)
     description: db.Mapped[str] = db.mapped_column(db.Text)
-    plane_status_id: db.Mapped[int] = db.mapped_column(db.Integer, ForeignKey('plane_status.id_estados_aeronaves'))
+    plane_status_id: db.Mapped[int] = db.mapped_column(db.Integer, db.ForeignKey('plane_status.id'))
 
     def __repr__(self):
-        return (
-            f"<Plane(id={self.id}, brand='{self.brand}', model='{self.model}', "
-            f"registration='{self.registration}', power='{self.power}', "
-            f"category='{self.category}', acquisition_date={self.acquisition_date}, "
-            f"consumption_per_hour={self.consumption_per_hour}, "
-            f"documentation_path='{self.documentation_path}', "
-            f"description='{self.description}'"
-            f"plane_status_id={self.plane_status_id})>"
-        )
+        return (f"<Plane "
+                f"id={self.id} "
+                f"model='{self.model}' "
+                f"consumption_per_hour={self.consumption_per_hour}")

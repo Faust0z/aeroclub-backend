@@ -7,7 +7,6 @@ from app.routes.aeronaves import aeronaves_bp
 from app.routes.roles import roles_bp
 from app.routes.reciboVuelos import reciboVuelos_bp
 from app.routes.auth import auth_bp
-from app.routes.reciboCombustible import reciboCombustible_bp
 from app.routes.transacciones import transacciones_bp
 from app.routes.cuentaCorriente import cuentaCorriente_bp
 from app.routes.recibosPDF import reciboPDF_bp
@@ -36,7 +35,6 @@ def create_app():
     app.register_blueprint(roles_bp, url_prefix='/roles')
     app.register_blueprint(reciboVuelos_bp, url_prefix='/recibo-vuelos')
     app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(reciboCombustible_bp, url_prefix='/recibo-combustible')
     app.register_blueprint(transacciones_bp, url_prefix='/transacciones')
     app.register_blueprint(cuentaCorriente_bp, url_prefix='/cuentaCorriente')
     app.register_blueprint(reciboPDF_bp, url_prefix='/recibo-pdf')

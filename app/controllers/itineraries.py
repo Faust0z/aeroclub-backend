@@ -1,9 +1,7 @@
 from app.models.itineraries import Itineraries
-from app.models.associations import ItineraryHasAirportCodes
-from app.models.itineraries import AirportCodes
+from app.models.airport_codes import AirportCodes
 from app.models.itinerary_types import ItineraryTypes
 from app.models.planes import Planes
-from sqlalchemy.orm import joinedload
 from ..extensions import db
 
 
@@ -84,7 +82,7 @@ class ItinerariosController:
                     horaLlegada,
                     cantAterrizajes,
                     observaciones,
-                    tipoItinerario.id_tipo_itinerarios,
+                    tipoItinerario.id,
                     aeronave.id_aeronaves,
                     idRecibo,
                 )
@@ -94,7 +92,7 @@ class ItinerariosController:
                 itinerarioTieneCodigosAeropuertosUno = (
                     ItineraryHasAirportCodes(
                         None,
-                        itinerario.id_itinerarios,
+                        itinerario.id,
                         codigosAeropuertosLlegada.id_codigos_aeropuertos,
                     )
                 )
@@ -105,7 +103,7 @@ class ItinerariosController:
                 itinerarioTieneCodigosAeropuertosDos = (
                     ItineraryHasAirportCodes(
                         None,
-                        itinerario.id_itinerarios,
+                        itinerario.id,
                         codigosAeropuertosSalida.id_codigos_aeropuertos,
                     )
                 )

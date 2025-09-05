@@ -1,8 +1,8 @@
 from app.models.transactions import Transactions
-from app.models.fare_types import PaymentTypes
+from app.models.payment_types import PaymentTypes
 from app.models.balances import Balances
 from app.models.users import Users
-from app.models.fare_types import PaymentTypes
+from app.models.payment_types import PaymentTypes
 from ..extensions import db
 
 
@@ -27,7 +27,7 @@ class TransaccionesController:
                 # aca me traigo el tipoPago para obtener su id
                 tipoPagoDictionary = db.session.query(PaymentTypes).filter_by(tipo=tipoPago).first()
 
-                transaccion = Transactions(None, monto, fecha, motivo, tipoPagoDictionary.id_tipo_pago, idCuentaCorriente)
+                transaccion = Transactions(None, monto, fecha, motivo, tipoPagoDictionary.id, idCuentaCorriente)
 
                 db.session.add(transaccion)
                 db.session.commit()
@@ -46,18 +46,18 @@ class TransaccionesController:
             transaccion_list = []
 
             for transaccion in transacciones:
-                idCuentaCorriente = transaccion.cuenta_corriente_id
+                idCuentaCorriente = transaccion.balance_id
                 cuentaCorriente = db.session.query(Balances).filter_by(id_cuenta_corriente=idCuentaCorriente).first()
-                usuario = db.session.query(Users).filter_by(id_usuarios=cuentaCorriente.usuarios_id).first()
-                tipoPago = db.session.query(PaymentTypes).filter_by(id_tipo_pago=transaccion.tipo_pago_id).first()
+                usuario = db.session.query(Users).filter_by(id_usuarios=cuentaCorriente.user_id).first()
+                tipoPago = db.session.query(PaymentTypes).filter_by(id_tipo_pago=transaccion.fare_type_id).first()
                 transaccion_data = {
                     'id_transacciones': transaccion.id_transacciones,
-                    'nombre_completo_usuario': usuario.nombre + " " + usuario.apellido,
-                    'monto': transaccion.monto,
-                    'fecha': transaccion.fecha,
-                    'motivo': transaccion.motivo,
-                    'tipo_pago_id': tipoPago.tipo,
-                    'cuenta_corriente_id': transaccion.cuenta_corriente_id,
+                    'nombre_completo_usuario': usuario.first_name + " " + usuario.last_name,
+                    'monto': transaccion.amount,
+                    'fecha': transaccion.issued_date,
+                    'motivo': transaccion.description,
+                    'tipo_pago_id': tipoPago.name,
+                    'cuenta_corriente_id': transaccion.balance_id,
                 }
                 transaccion_list.append(transaccion_data)
             return transaccion_list
@@ -74,11 +74,11 @@ class TransaccionesController:
         for transaccion in transaccion_uid:
             transaccion_data = {
                 'id_transacciones': transaccion.id_transacciones,
-                'monto': transaccion.monto,
-                'fecha': transaccion.fecha,
-                'motivo': transaccion.motivo,
-                'tipo_pago_id': transaccion.tipo_pago_id,
-                'cuenta_corriente_id': transaccion.cuenta_corriente_id,
+                'monto': transaccion.amount,
+                'fecha': transaccion.issued_date,
+                'motivo': transaccion.description,
+                'tipo_pago_id': transaccion.fare_type_id,
+                'cuenta_corriente_id': transaccion.balance_id,
             }
             transaccion_uid_list.append(transaccion_data)
         return transaccion_uid_list

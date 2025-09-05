@@ -6,7 +6,6 @@ from ..extensions import db
 from datetime import datetime
 from operator import or_
 from app.models.roles import Roles
-from app.models.associations import UsersHaveRoles
 
 
 class UsuariosController:
@@ -21,20 +20,20 @@ class UsuariosController:
             return False
 
         usuario = {'id_usuarios': userMalFormato.id_usuarios,
-                   'nombre': userMalFormato.nombre,
-                   'apellido': userMalFormato.apellido,
+                   'nombre': userMalFormato.first_name,
+                   'apellido': userMalFormato.last_name,
                    'email': userMalFormato.email,
-                   'telefono': userMalFormato.telefono,
+                   'telefono': userMalFormato.phone_number,
                    'dni': userMalFormato.dni,
-                   'fecha_alta': userMalFormato.fecha_alta,
-                   'fecha_baja': userMalFormato.fecha_baja,
-                   'direccion': userMalFormato.direccion,
+                   'fecha_alta': userMalFormato.created_at,
+                   'fecha_baja': userMalFormato.disabled_at,
+                   'direccion': userMalFormato.address,
                    'foto_perfil': userMalFormato.foto_perfil,
-                   'estado_hab_des': userMalFormato.estado_hab_des,
+                   'estado_hab_des': userMalFormato.status,
                    'roles': [
                        {
-                           'id_roles': role.id_roles,
-                           'tipo': role.tipo,
+                           'id_roles': role.id,
+                           'tipo': role.name,
                        }
                        for role in userMalFormato.roles
                    ]
@@ -48,24 +47,24 @@ class UsuariosController:
 
         users = Users.query.all()
         user_list = [{'id_usuarios': user.id_usuarios,
-                      'nombre': user.nombre,
-                      'apellido': user.apellido,
+                      'nombre': user.first_name,
+                      'apellido': user.last_name,
                       'email': user.email,
-                      'telefono': user.telefono,
+                      'telefono': user.phone_number,
                       'dni': user.dni,
-                      'fecha_alta': user.fecha_alta,
-                      'fecha_baja': user.fecha_baja,
-                      'direccion': user.direccion,
+                      'fecha_alta': user.created_at,
+                      'fecha_baja': user.disabled_at,
+                      'direccion': user.address,
                       'foto_perfil': user.foto_perfil,
-                      'estado_hab_des': user.estado_hab_des,
+                      'estado_hab_des': user.status,
                       'roles': [
                           {
-                              'id_roles': role.id_roles,
-                              'tipo': role.tipo,
+                              'id_roles': role.id,
+                              'tipo': role.name,
                           }
                           for role in user.roles
                       ]  # Incluye los datos de la relación 'roles'
-                      } for user in users if user.estado_hab_des != 0]
+                      } for user in users if user.status != 0]
         return user_list
 
     def crearUsuario(self, data):
@@ -113,25 +112,25 @@ class UsuariosController:
             return False
 
         if 'nombre' in data:
-            usuario.nombre = data['nombre']
+            usuario.first_name = data['nombre']
         if 'apellido' in data:
-            usuario.apellido = data['apellido']
+            usuario.last_name = data['apellido']
         if 'email' in data:
             usuario.email = data['email']
         if 'telefono' in data:
-            usuario.telefono = data['telefono']
+            usuario.phone_number = data['telefono']
         if 'dni' in data:
             usuario.dni = data['dni']
         if 'fecha_alta' in data:
-            usuario.fecha_alta = data['fecha_alta']
+            usuario.created_at = data['fecha_alta']
         if 'fecha_baja' in data:
-            usuario.fecha_baja = data['fecha_baja']
+            usuario.disabled_at = data['fecha_baja']
         if 'direccion' in data:
-            usuario.direccion = data['direccion']
+            usuario.address = data['direccion']
         if 'foto_perfil' in data:
             usuario.foto_perfil = data['foto_perfil']
         if 'estado_hab_des' in data:
-            usuario.estado_hab_des = data['estado_hab_des']
+            usuario.status = data['estado_hab_des']
 
         # para que te lo guarde primero hay que buscar en la db una clase del modelo
         # y despues cuando modifique un atributo de esa clase cuenta como que lo modifique
@@ -146,18 +145,19 @@ class UsuariosController:
         if not usuario:
             return False
 
-        usuario.estado_hab_des = 0
+        usuario.status = 0
         db.session.commit()
         return True
 
     def obtenerUsuarioPorNombre(self, nombre):
         usuarioNombre = db.session.query(Users).filter(
-            or_(Users.nombre.like(f'%{nombre}%'), Users.apellido.like(f'%{nombre}%'))).all()
+            or_(Users.first_name.like(f'%{nombre}%'), Users.last_name.like(f'%{nombre}%'))).all()
         if not usuarioNombre:
             return False
 
         resultados_json = [
-            {'id_usuarios': usuario.id_usuarios, 'nombre': usuario.nombre, 'apellido': usuario.apellido, 'email': usuario.email}
+            {'id_usuarios': usuario.id_usuarios, 'nombre': usuario.first_name, 'apellido': usuario.last_name,
+             'email': usuario.email}
             for usuario in usuarioNombre]
 
         return resultados_json
@@ -166,10 +166,10 @@ class UsuariosController:
         try:
             # Obtener id_usuarios de UsersHaveRoles con id_roles == 2
             rolInstructor = db.session.query(Roles).filter_by(tipo='Instructor').first()
-            instructores_id = db.session.query(UsersHaveRoles).filter_by(roles_id=rolInstructor.id_roles).all()
+            instructores_id = db.session.query(Users).filter_by(roles_id=rolInstructor.id).all()
 
             # Almacena los id_usuarios en una lista
-            id_usuarios_rol_dos = [usuario.usuarios_id for usuario in instructores_id]
+            id_usuarios_rol_dos = [usuario.user_id for usuario in instructores_id]
 
             # Obtener los datos de los usuarios del array id_usuarios_rol_dos
             instructores_list = db.session.query(Users).filter(Users.id_usuarios.in_(id_usuarios_rol_dos)).all()
@@ -178,25 +178,25 @@ class UsuariosController:
             instructores_data = [
                 {
                     'id_usuarios': instructor.id_usuarios,
-                    'nombre': instructor.nombre,
-                    'apellido': instructor.apellido,
+                    'nombre': instructor.first_name,
+                    'apellido': instructor.last_name,
                     'email': instructor.email,
-                    'telefono': instructor.telefono,
+                    'telefono': instructor.phone_number,
                     'dni': instructor.dni,
-                    'fecha_alta': instructor.fecha_alta,
-                    'fecha_baja': instructor.fecha_baja,
-                    'direccion': instructor.direccion,
+                    'fecha_alta': instructor.created_at,
+                    'fecha_baja': instructor.disabled_at,
+                    'direccion': instructor.address,
                     'foto_perfil': instructor.foto_perfil,
-                    'estado_hab_des': instructor.estado_hab_des,
+                    'estado_hab_des': instructor.status,
                     'roles': [
                         {
-                            'id_roles': rol.id_roles,
-                            'tipo': rol.tipo,
+                            'id_roles': rol.id,
+                            'tipo': rol.name,
                         }
-                        for rol in instructor.roles if rol.id_roles == 2
+                        for rol in instructor.roles if rol.id == 2
                     ]
                 }
-                for instructor in instructores_list if instructor.estado_hab_des != 0
+                for instructor in instructores_list if instructor.status != 0
             ]
 
             return instructores_data
@@ -208,10 +208,10 @@ class UsuariosController:
         try:
             # Obtener id_usuarios de UsersHaveRoles con id_roles == 2
             rolAsociado = db.session.query(Roles).filter_by(tipo='Asociado').first()
-            asociado_id = db.session.query(UsersHaveRoles).filter_by(roles_id=rolAsociado.id_roles).all()
+            asociado_id = db.session.query(Users).filter_by(roles_id=rolAsociado.id).all()
 
             # Almacena los id_usuarios en una lista
-            id_usuarios_rol_asociado = [usuario.usuarios_id for usuario in asociado_id]
+            id_usuarios_rol_asociado = [usuario.user_id for usuario in asociado_id]
 
             # Obtener los datos de los usuarios del array id_usuarios_rol_asociado
             asociados_list = db.session.query(Users).filter(Users.id_usuarios.in_(id_usuarios_rol_asociado)).all()
@@ -220,25 +220,25 @@ class UsuariosController:
             asociados_data = [
                 {
                     'id_usuarios': asociado.id_usuarios,
-                    'nombre': asociado.nombre,
-                    'apellido': asociado.apellido,
+                    'nombre': asociado.first_name,
+                    'apellido': asociado.last_name,
                     'email': asociado.email,
-                    'telefono': asociado.telefono,
+                    'telefono': asociado.phone_number,
                     'dni': asociado.dni,
-                    'fecha_alta': asociado.fecha_alta,
-                    'fecha_baja': asociado.fecha_baja,
-                    'direccion': asociado.direccion,
+                    'fecha_alta': asociado.created_at,
+                    'fecha_baja': asociado.disabled_at,
+                    'direccion': asociado.address,
                     'foto_perfil': asociado.foto_perfil,
-                    'estado_hab_des': asociado.estado_hab_des,
+                    'estado_hab_des': asociado.status,
                     'roles': [
                         {
-                            'id_roles': rol.id_roles,
-                            'tipo': rol.tipo,
+                            'id_roles': rol.id,
+                            'tipo': rol.name,
                         }
-                        for rol in asociado.roles if rol.id_roles
+                        for rol in asociado.roles if rol.id
                     ]
                 }
-                for asociado in asociados_list if asociado.estado_hab_des != 0
+                for asociado in asociados_list if asociado.status != 0
             ]
 
             return asociados_data

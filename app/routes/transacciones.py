@@ -9,24 +9,18 @@ transacciones_bp = Blueprint("transacciones", __name__)
 
 @transacciones_bp.route("/", methods=["GET"])
 def get_transacciones():
-    has_access = Security.verify_token(request.headers)
+    try:
 
-    if has_access:
-        try:
-
-            transaccion_controller = TransaccionesController()
-            transacciones = transaccion_controller.obtenerTransacciones()
-            if transacciones:
-                return jsonify({"response": transacciones, "success": True})
-            else:
-                return jsonify({"message": "ERROR", "success": False})
-
-        except Exception as ex:
-            print(ex)
+        transaccion_controller = TransaccionesController()
+        transacciones = transaccion_controller.obtenerTransacciones()
+        if transacciones:
+            return jsonify({"response": transacciones, "success": True})
+        else:
             return jsonify({"message": "ERROR", "success": False})
-    else:
-        response = jsonify({"message": "Unauthorized"})
-        return response, 401
+
+    except Exception as ex:
+        print(ex)
+        return jsonify({"message": "ERROR", "success": False})
 
 
 @transacciones_bp.route("/", methods=["POST"])
@@ -63,35 +57,29 @@ def create_transaccion():
 
 @transacciones_bp.route("/usuario/<int:usuario_id>", methods=["GET"])
 def get_transacciones_usuario(usuario_id):
-    has_access = Security.verify_token(request.headers)
+    try:
+        # buscar la cuenta corriente asociada a ese usuario
+        cuenta_corriente = CuentaCorriente.query.filter_by(
+            usuarios_id=usuario_id
+        ).first()
 
-    if has_access:
-        try:
-            # buscar la cuenta corriente asociada a ese usuario
-            cuenta_corriente = CuentaCorriente.query.filter_by(
-                usuarios_id=usuario_id
-            ).first()
+        if cuenta_corriente:
+            transaccion_controller = TransaccionesController()
+            # Usar el ID de la cuenta corriente para obtener las transacciones
+            transacciones = transaccion_controller.obtener_transaccion(
+                cuenta_corriente.id
+            )
 
-            if cuenta_corriente:
-                transaccion_controller = TransaccionesController()
-                # Usar el ID de la cuenta corriente para obtener las transacciones
-                transacciones = transaccion_controller.obtener_transaccion(
-                    cuenta_corriente.id_cuenta_corriente
-                )
-
-                if transacciones:
-                    return jsonify({"response": transacciones, "success": True})
-                else:
-                    return jsonify(
-                        {"message": "No se encontraron transacciones para este usuario"}
-                    )
+            if transacciones:
+                return jsonify({"response": transacciones, "success": True})
             else:
                 return jsonify(
-                    {"message": "No se encontró la cuenta corriente para este usuario"}
+                    {"message": "No se encontraron transacciones para este usuario"}
                 )
-        except Exception as ex:
-            print(ex)
-            return jsonify({"message": "ERROR", "success": False})
-    else:
-        response = jsonify({"message": "Unauthorized"})
-        return response, 401
+        else:
+            return jsonify(
+                {"message": "No se encontró la cuenta corriente para este usuario"}
+            )
+    except Exception as ex:
+        print(ex)
+        return jsonify({"message": "ERROR", "success": False})

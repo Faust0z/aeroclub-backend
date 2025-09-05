@@ -1,23 +1,21 @@
 from ..extensions import db
-from sqlalchemy import ForeignKey
+from .associations import itinerary_has_airport_codes
+from datetime import datetime
 
 
 class Itineraries(db.Model):
     __tablename__ = 'itineraries'
-    id_itinerarios = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    hora_salida = db.Column(db.DateTime, nullable=False)
-    hora_llegada = db.Column(db.DateTime, nullable=False)
-    cantidad_aterrizajes = db.Column(db.Integer, nullable=False)
-    observaciones = db.Column(db.String(255))
-    tipo_itinerarios_id = db.Column(db.Integer, ForeignKey('itinerary_types.id_tipo_itinerarios'))
-    aeronaves_id = db.Column(db.Integer, ForeignKey('planes.id_aeronaves'))
-    RECIBOS_id_recibos = db.Column(db.Integer, ForeignKey('receipts.id_recibos'))
+    id: db.Mapped[int] = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    departure_time: db.Mapped[datetime] = db.Column(db.DateTime, nullable=False)
+    landing_time: db.Mapped[datetime] = db.Column(db.DateTime, nullable=False)
+    landings_amount: db.Mapped[int] = db.Column(db.Integer, nullable=False)
+    observations: db.Mapped[str] = db.Column(db.Text)
+    itinerary_type_id: db.Mapped[int] = db.Column(db.Integer, db.ForeignKey('itinerary_types.id'))
+    plane_id: db.Mapped[int] = db.Column(db.Integer, db.ForeignKey('planes.id'))
+    invoice_id: db.Mapped[int] = db.Column(db.Integer, db.ForeignKey('invoices.id'))
 
-    # para borrar en cascada
-    itinerariosRecibos = db.relationship('Receipts', back_populates='recibosItinerarios')
+    airport_codes: db.Mapped[list["AirportCodes"]] = db.relationship('AirportCodes', secondary=itinerary_has_airport_codes,
+                                                                     back_populates="itineraries")
 
-
-class AirportCodes(db.Model):
-    __tablename__ = 'airport_codes'
-    id_codigos_aeropuertos = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    codigo_aeropuerto = db.Column(db.String(45))
+    def __repr__(self):
+        return f"<departure_time={self.departure_time} landing_time={self.landing_time} landing_number={self.landings_amount}>"

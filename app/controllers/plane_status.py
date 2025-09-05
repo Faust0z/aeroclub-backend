@@ -10,7 +10,7 @@ class EstadoAeronavesController:
         estadoFound = PlaneStatus.query.get(id)
         if estadoFound:
             estadoSend = {
-                "estado": estadoFound.estado,
+                "estado": estadoFound.state,
             }
             return estadoSend
         return False
@@ -22,7 +22,7 @@ class EstadoAeronavesController:
 
         if estadoAeroFound:
             estadoAeroFound = {
-                "id": estadoAeroFound.id_estados_aeronaves,
+                "id": estadoAeroFound.id,
             }
             return estadoAeroFound
         return False

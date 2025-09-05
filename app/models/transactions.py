@@ -1,14 +1,15 @@
 from ..extensions import db
-from sqlalchemy import ForeignKey
+from datetime import date
 
 
 class Transactions(db.Model):
     __tablename__ = 'transactions'
-    id_transacciones = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    monto = db.Column(db.Float, nullable=False)
-    fecha = db.Column(db.Date, nullable=False)
-    motivo = db.Column(db.Text, nullable=True)
-    tipo_pago_id = db.Column(db.Integer, ForeignKey('payment_types.id_tipo_pago'))
-    cuenta_corriente_id = db.Column(db.Integer, ForeignKey('current_account.id_cuenta_corriente'))
+    id: db.Mapped[int] = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    amount: db.Mapped[float] = db.Column(db.Float, nullable=False)
+    issued_date: db.Mapped[date] = db.Column(db.Date, nullable=False)
+    description: db.Mapped[str] = db.Column(db.Text, nullable=True)
+    fare_type_id = db.Column(db.ForeignKey('payment_types.id'))
+    balance_id = db.Column(db.ForeignKey('balances.id'))
 
-    transaccionesRecibos = db.relationship('Receipts', back_populates='recibosTransacciones', cascade='all, delete-orphan')
+    def __repr__(self):
+        return f"<Transaction amount={self.amount} issued_date={self.issued_date}>"

@@ -1,19 +1,14 @@
-
 import datetime
 import jwt
-import pytz
 import os
+from dotenv import load_dotenv
 
 
 class Security():
-    # Carga las variables de entorno desde el archivo .env
     load_dotenv()
 
     # Ahora puedes acceder a las variables de entorno como si estuvieran definidas en el sistema
-    token_secret = os.getenv('TOKEN_SECRET') # TODO: just import them from settings.py
-     #poner la key en el .env mas adelante
-    secret = token_secret
-    tz = pytz.timezone("America/Argentina/Buenos_Aires")
+    token_secret = os.getenv('TOKEN_SECRET')  # TODO: just import them from settings.py
 
     @classmethod
     def generate_token(cls, email):
@@ -33,9 +28,9 @@ class Security():
             if ((len(encoded_token) > 0) and (encoded_token.count('.') == 2)):
                 try:
                     payload = jwt.decode(encoded_token, cls.secret, algorithms=["HS256"])
-                    
-                    #acordarse que con esta mecanica de los roles se puede aplicar
-                    #para los roles del aeroclub tengan acceso a ciertos endpoint
+
+                    # acordarse que con esta mecanica de los roles se puede aplicar
+                    # para los roles del aeroclub tengan acceso a ciertos endpoint
                     """
                         roles = list(payload['roles'])
 
@@ -43,12 +38,11 @@ class Security():
                         return True
                     return False
                     """
-                    
+
                     return True
                 except (jwt.ExpiredSignatureError, jwt.InvalidSignatureError):
                     return False
         return False
-
 
     @classmethod
     def resolvertoken(cls, headers):
@@ -59,9 +53,9 @@ class Security():
             if ((len(encoded_token) > 0) and (encoded_token.count('.') == 2)):
                 try:
                     payload = jwt.decode(encoded_token, cls.secret, algorithms=["HS256"])
-                    
-                    #acordarse que con esta mecanica de los roles se puede aplicar
-                    #para los roles del aeroclub tengan acceso a ciertos endpoint
+
+                    # acordarse que con esta mecanica de los roles se puede aplicar
+                    # para los roles del aeroclub tengan acceso a ciertos endpoint
                     """
                         roles = list(payload['roles'])
 
@@ -69,7 +63,7 @@ class Security():
                         return True
                     return False
                     """
-                    
+
                     return payload
                 except (jwt.ExpiredSignatureError, jwt.InvalidSignatureError):
                     return False

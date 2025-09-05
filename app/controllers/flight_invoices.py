@@ -1,14 +1,13 @@
 import math
 from app.models.invoices import Invoices
-from app.models.invoice_types import receipt_types
+from app.models.invoice_types import ReceiptTypes
 from app.models.users import Users
 from app.models.planes import Planes
 from app.models.fares import Fares
-from app.models.associations import UsersHaveInvoices, UsersHaveRoles, ItineraryHasAirportCodes
 from app.models.roles import Roles
 from app.models.transactions import Transactions
 from app.models.itineraries import Itineraries
-from app.models.itineraries import AirportCodes
+from app.models.airport_codes import AirportCodes
 from app.models.itinerary_types import ItineraryTypes
 from app.controllers.itineraries import ItinerariosController
 from app.controllers.balances import cuentaCorrienteController
@@ -54,7 +53,7 @@ class RecibosController:
 
         mayorTarifa = tarifas[0]
         for tarifa in tarifas:
-            if tarifa.importe_instruccion > mayorTarifa.importe_instruccion:
+            if tarifa.instruction_cost > mayorTarifa.instruction_cost:
                 mayorTarifa = tarifa
         return mayorTarifa
 
@@ -65,7 +64,7 @@ class RecibosController:
             )
             itinerarios = []
             if recibo:
-                idRecibo = recibo.id_recibos
+                idRecibo = recibo.id
                 print(f"id de cada recibo: {idRecibo}")
                 # Hay que inicializarlo para que no tire error cuando se pregunta con un if
                 # si existe
@@ -92,48 +91,48 @@ class RecibosController:
                 if instructorTieneRecibo:
                     instructor = (
                         db.session.query(Users)
-                        .filter_by(id_usuarios=instructorTieneRecibo.usuarios_id)
+                        .filter_by(id_usuarios=instructorTieneRecibo.user_id)
                         .first()
                     )
-                    print(f"Instructor name: {idRecibo} {instructor.nombre}")
+                    print(f"Instructor name: {idRecibo} {instructor.first_name}")
 
                 gestor = (
                     db.session.query(Users)
-                    .filter_by(id_usuarios=gestorTineneRecibo.usuarios_id)
+                    .filter_by(id_usuarios=gestorTineneRecibo.user_id)
                     .first()
                 )
 
                 asociado = (
                     db.session.query(Users)
-                    .filter_by(id_usuarios=asociadoTienenRecibo.usuarios_id)
+                    .filter_by(id_usuarios=asociadoTienenRecibo.user_id)
                     .first()
                 )
 
                 transaccion = (
                     db.session.query(Transactions)
-                    .filter_by(id_transacciones=recibo.transacciones_id)
+                    .filter_by(id_transacciones=recibo.transaction_id)
                     .first()
                 )
 
                 getAllItinerarios = (
                     db.session.query(Itineraries)
-                    .filter_by(RECIBOS_id_recibos=recibo.id_recibos)
+                    .filter_by(RECIBOS_id_recibos=recibo.id)
                     .all()
                 )
 
-                print(f"Gestor name:{idRecibo} {gestor.nombre}")
+                print(f"Gestor name:{idRecibo} {gestor.first_name}")
 
                 for itinerario in getAllItinerarios:
 
                     aeronave = (
                         db.session.query(Planes)
-                        .filter_by(id_aeronaves=itinerario.aeronaves_id)
+                        .filter_by(id_aeronaves=itinerario.plane_id)
                         .first()
                     )
 
                     codsAeros = (
                         db.session.query(ItineraryHasAirportCodes)
-                        .filter_by(itinerarios_id=itinerario.id_itinerarios)
+                        .filter_by(itinerarios_id=itinerario.id)
                         .all()
                     )
 
@@ -153,22 +152,22 @@ class RecibosController:
 
                     tipoItinerario = (
                         db.session.query(ItineraryTypes)
-                        .filter_by(id_tipo_itinerarios=itinerario.tipo_itinerarios_id)
+                        .filter_by(id_tipo_itinerarios=itinerario.itinerary_type_id)
                         .first()
                     )
 
-                    if type(itinerario.cantidad_aterrizajes) == int:
-                        numero = str(itinerario.cantidad_aterrizajes)
+                    if type(itinerario.landings_amount) == int:
+                        numero = str(itinerario.landings_amount)
                     else:
-                        numero = itinerario.cantidad_aterrizajes
+                        numero = itinerario.landings_amount
 
                     dictItinerario = {
-                        "horaSalida": itinerario.hora_salida,
-                        "codAeroSalida": codAeroSalida.codigo_aeropuerto,
-                        "horaLlegada": itinerario.hora_llegada,
-                        "codAeroLlegada": codAeroLlegada.codigo_aeropuerto,
+                        "horaSalida": itinerario.departure_time,
+                        "codAeroSalida": codAeroSalida.code,
+                        "horaLlegada": itinerario.landing_time,
+                        "codAeroLlegada": codAeroLlegada.code,
                         "cantAterrizajes": numero,
-                        "tipoItinerario": tipoItinerario.tipo,
+                        "tipoItinerario": tipoItinerario.name,
                     }
 
                     print(f"Un itinerario dict: {dictItinerario}")
@@ -177,12 +176,12 @@ class RecibosController:
                 if instructor:
                     reciboCompleto = [
                         {
-                            "numRecibo": recibo.numero_recibos,
-                            "asociado": asociado.nombre + " " + asociado.apellido,
+                            "numRecibo": recibo.invoice_identifier,
+                            "asociado": asociado.first_name + " " + asociado.last_name,
                             "instructor": instructor.nombre + " " + instructor.apellido,
-                            "gestor": gestor.nombre + " " + gestor.apellido,
-                            "precioTotal": transaccion.monto * (-1),
-                            "observaciones": recibo.observaciones,
+                            "gestor": gestor.first_name + " " + gestor.last_name,
+                            "precioTotal": transaccion.amount * (-1),
+                            "observaciones": recibo.details,
                             "matricula": aeronave.matricula,
                         }
                     ]
@@ -190,12 +189,12 @@ class RecibosController:
                 else:
                     reciboCompleto = [
                         {
-                            "numRecibo": recibo.numero_recibos,
-                            "asociado": asociado.nombre + " " + asociado.apellido,
+                            "numRecibo": recibo.invoice_identifier,
+                            "asociado": asociado.first_name + " " + asociado.last_name,
                             "instructor": "",
-                            "gestor": gestor.nombre + " " + gestor.apellido,
-                            "precioTotal": transaccion.monto * (-1),
-                            "observaciones": recibo.observaciones,
+                            "gestor": gestor.first_name + " " + gestor.last_name,
+                            "precioTotal": transaccion.amount * (-1),
+                            "observaciones": recibo.details,
                             "matricula": aeronave.matricula,
                         }
                     ]
@@ -251,42 +250,42 @@ class RecibosController:
                     if instructorTieneRecibo:
                         instructor = (
                             db.session.query(Users)
-                            .filter_by(id_usuarios=instructorTieneRecibo.usuarios_id)
+                            .filter_by(id_usuarios=instructorTieneRecibo.user_id)
                             .first()
                         )
-                        print(f"Instructor name: {idRecibo} {instructor.nombre}")
+                        print(f"Instructor name: {idRecibo} {instructor.first_name}")
 
                     gestor = (
                         db.session.query(Users)
-                        .filter_by(id_usuarios=gestorTineneRecibo.usuarios_id)
+                        .filter_by(id_usuarios=gestorTineneRecibo.user_id)
                         .first()
                     )
 
                     transaccion = (
                         db.session.query(Transactions)
-                        .filter_by(id_transacciones=recibo.transacciones_id)
+                        .filter_by(id_transacciones=recibo.transaction_id)
                         .first()
                     )
 
                     getAllItinerarios = (
                         db.session.query(Itineraries)
-                        .filter_by(RECIBOS_id_recibos=recibo.id_recibos)
+                        .filter_by(RECIBOS_id_recibos=recibo.id)
                         .all()
                     )
 
-                    print(f"Gestor name:{idRecibo} {gestor.nombre}")
+                    print(f"Gestor name:{idRecibo} {gestor.first_name}")
 
                     for itinerario in getAllItinerarios:
 
                         aeronave = (
                             db.session.query(Planes)
-                            .filter_by(id_aeronaves=itinerario.aeronaves_id)
+                            .filter_by(id_aeronaves=itinerario.plane_id)
                             .first()
                         )
 
                         codsAeros = (
                             db.session.query(ItineraryHasAirportCodes)
-                            .filter_by(itinerarios_id=itinerario.id_itinerarios)
+                            .filter_by(itinerarios_id=itinerario.id)
                             .all()
                         )
 
@@ -307,23 +306,23 @@ class RecibosController:
                         tipoItinerario = (
                             db.session.query(ItineraryTypes)
                             .filter_by(
-                                id_tipo_itinerarios=itinerario.tipo_itinerarios_id
+                                id_tipo_itinerarios=itinerario.itinerary_type_id
                             )
                             .first()
                         )
 
-                        if type(itinerario.cantidad_aterrizajes) == int:
-                            numero = str(itinerario.cantidad_aterrizajes)
+                        if type(itinerario.landings_amount) == int:
+                            numero = str(itinerario.landings_amount)
                         else:
-                            numero = itinerario.cantidad_aterrizajes
+                            numero = itinerario.landings_amount
 
                         dictItinerario = {
-                            "horaSalida": itinerario.hora_salida,
-                            "codAeroSalida": codAeroSalida.codigo_aeropuerto,
-                            "horaLlegada": itinerario.hora_llegada,
-                            "codAeroLlegada": codAeroLlegada.codigo_aeropuerto,
+                            "horaSalida": itinerario.departure_time,
+                            "codAeroSalida": codAeroSalida.code,
+                            "horaLlegada": itinerario.landing_time,
+                            "codAeroLlegada": codAeroLlegada.code,
                             "cantAterrizajes": numero,
-                            "tipoItinerario": tipoItinerario.tipo,
+                            "tipoItinerario": tipoItinerario.name,
                         }
 
                         print(f"Un itinerario dict: {dictItinerario}")
@@ -333,14 +332,14 @@ class RecibosController:
 
                         recibo = [
                             {
-                                "numRecibo": recibo.numero_recibos,
-                                "asociado": asociado.nombre + " " + asociado.apellido,
+                                "numRecibo": recibo.invoice_identifier,
+                                "asociado": asociado.first_name + " " + asociado.last_name,
                                 "instructor": instructor.nombre
                                               + " "
                                               + instructor.apellido,
-                                "gestor": gestor.nombre + " " + gestor.apellido,
-                                "precioTotal": transaccion.monto * (-1),
-                                "observaciones": recibo.observaciones,
+                                "gestor": gestor.first_name + " " + gestor.last_name,
+                                "precioTotal": transaccion.amount * (-1),
+                                "observaciones": recibo.details,
                                 "matricula": aeronave.matricula,
                             }
                         ]
@@ -348,12 +347,12 @@ class RecibosController:
                     else:
                         recibo = [
                             {
-                                "numRecibo": recibo.numero_recibos,
-                                "asociado": asociado.nombre + " " + asociado.apellido,
+                                "numRecibo": recibo.invoice_identifier,
+                                "asociado": asociado.first_name + " " + asociado.last_name,
                                 "instructor": "",
-                                "gestor": gestor.nombre + " " + gestor.apellido,
-                                "precioTotal": transaccion.monto * (-1),
-                                "observaciones": recibo.observaciones,
+                                "gestor": gestor.first_name + " " + gestor.last_name,
+                                "precioTotal": transaccion.amount * (-1),
+                                "observaciones": recibo.details,
                                 "matricula": aeronave.matricula,
                             }
                         ]
@@ -412,7 +411,7 @@ class RecibosController:
             asociadoTieneRol = (
                 db.session.query(UsersHaveRoles)
                 .filter_by(
-                    usuarios_id=asociado.id_usuarios, roles_id=rolAsociado.id_roles
+                    usuarios_id=asociado.id_usuarios, roles_id=rolAsociado.id
                 )
                 .first()
             )
@@ -420,7 +419,7 @@ class RecibosController:
             rolGestor = db.session.query(Roles).filter_by(tipo="Gestor").first()
             gestorTieneRol = (
                 db.session.query(UsersHaveRoles)
-                .filter_by(usuarios_id=gestor.id_usuarios, roles_id=rolGestor.id_roles)
+                .filter_by(usuarios_id=gestor.id_usuarios, roles_id=rolGestor.id)
                 .first()
             )
 
@@ -477,7 +476,7 @@ class RecibosController:
                         print(f"tarifa: {tarifa}")
 
                         precioCadaItinerario = {
-                            "vuelo": tarifa.importe_vuelo * horas,
+                            "vuelo": tarifa.fare_value * horas,
                             "instuccion": tarifaInstructor.importe_instruccion * horas,
                         }
                         precioItinerarios.append(precioCadaItinerario)
@@ -494,7 +493,7 @@ class RecibosController:
                                 db.session.query(UsersHaveRoles)
                                 .filter_by(
                                     usuarios_id=instructor.id_usuarios,
-                                    roles_id=rolInstructor.id_roles,
+                                    roles_id=rolInstructor.id,
                                 )
                                 .first()
                             )
@@ -509,7 +508,7 @@ class RecibosController:
                     else:
 
                         precioCadaItinerario = {
-                            "vuelo": tarifa.importe_vuelo * horas,
+                            "vuelo": tarifa.fare_value * horas,
                             "instuccion": 0,
                         }
                         precioItinerarios.append(precioCadaItinerario)
@@ -560,7 +559,7 @@ class RecibosController:
                 if transaccionAsociado:
                     # traigo el tipoRecibo para usar el id
                     tipoRecibo = (
-                        db.session.query(receipt_types)
+                        db.session.query(ReceiptTypes)
                         .filter_by(tipo="Recibo de Vuelo")
                         .first()
                     )
@@ -569,19 +568,19 @@ class RecibosController:
 
                     reciboMayor = (
                         db.session.query(Invoices)
-                        .order_by(Invoices.numero_recibos.desc())
+                        .order_by(Invoices.invoice_identifier.desc())
                         .first()
                     )
 
                     if reciboMayor:
-                        num_recibo = reciboMayor.numero_recibos + 1
+                        num_recibo = reciboMayor.invoice_identifier + 1
 
                     # Se crea un recibo
                     recibo = Invoices(
                         None,
                         fecha_actual,
                         observaciones,
-                        tipoRecibo.id_tipo_recibos,
+                        tipoRecibo.id,
                         transaccionAsociado.id_transacciones,
                         num_recibo,
                     )
@@ -609,14 +608,14 @@ class RecibosController:
                         # rolInstructor = db.session.query(Roles).filter_by(tipo="Instructor").first()
                         # rolGestor = db.session.query(Roles).filter_by(tipo="Gestor").first()
                         # realaciones de los usuarios y los recibos con el rol de cada uno
-                        print(f"este es el recibo id: {recibo.id_recibos}")
+                        print(f"este es el recibo id: {recibo.id}")
                         # creamos y guardamos la relacion de UsersHaveInvoices
 
                         asociadoTieneRecibo = UsersHaveInvoices(
-                            None, recibo.id_recibos, asociado.id_usuarios, "Asociado"
+                            None, recibo.id, asociado.id_usuarios, "Asociado"
                         )
                         gestorTieneRecibo = UsersHaveInvoices(
-                            None, recibo.id_recibos, gestor.id_usuarios, "Gestor"
+                            None, recibo.id, gestor.id_usuarios, "Gestor"
                         )
 
                         db.session.add(asociadoTieneRecibo)
@@ -627,7 +626,7 @@ class RecibosController:
                             # si hay un instructor tambien creamos la relacion
                             instructorTieneRecibo = UsersHaveInvoices(
                                 None,
-                                recibo.id_recibos,
+                                recibo.id,
                                 instructor.id_usuarios,
                                 "Instructor",
                             )
@@ -652,7 +651,7 @@ class RecibosController:
                                     itinerario.get("cantAterrizajes"),
                                     matricula,
                                     itinerario.get("tipoItinerario"),
-                                    recibo.id_recibos,
+                                    recibo.id,
                                 )
                             )
 
@@ -686,9 +685,9 @@ class RecibosController:
 
                             if asociado:
                                 if transaccionAsociado:
-                                    montoAsociado = transaccionAsociado.monto
+                                    montoAsociado = transaccionAsociado.amount
                                     idCuentaCorrienteAsociado = (
-                                        transaccionAsociado.cuenta_corriente_id
+                                        transaccionAsociado.balance_id
                                     )
                                     db.session.delete(transaccionAsociado)
                                     resUno = cuentaCorrienteController.retrotraer_pago(
@@ -702,7 +701,7 @@ class RecibosController:
                             db.session.commit()
                             return 5
 
-                        return [13, recibo.numero_recibos]
+                        return [13, recibo.invoice_identifier]
 
                     else:
                         return 6
@@ -760,14 +759,14 @@ class RecibosController:
             todosLosRecibos = []
 
             tipoRecibo = (
-                db.session.query(receipt_types)
+                db.session.query(ReceiptTypes)
                 .filter_by(tipo="Recibo de Vuelo")
                 .first()
             )
 
             recibos = (
                 db.session.query(Invoices)
-                .filter_by(tipo_recibos_id=tipoRecibo.id_tipo_recibos)
+                .filter_by(tipo_recibos_id=tipoRecibo.id)
                 .all()
             )
 
@@ -783,46 +782,46 @@ class RecibosController:
 
                 asociadoTieneRecibo = (
                     db.session.query(UsersHaveInvoices)
-                    .filter_by(recibos_id=recibo.id_recibos, rol="Asociado")
+                    .filter_by(recibos_id=recibo.id, rol="Asociado")
                     .first()
                 )
                 instructorTieneRecibo = (
                     db.session.query(UsersHaveInvoices)
-                    .filter_by(recibos_id=recibo.id_recibos, rol="Instructor")
+                    .filter_by(recibos_id=recibo.id, rol="Instructor")
                     .first()
                 )
                 gestorTineneRecibo = (
                     db.session.query(UsersHaveInvoices)
-                    .filter_by(recibos_id=recibo.id_recibos, rol="Gestor")
+                    .filter_by(recibos_id=recibo.id, rol="Gestor")
                     .first()
                 )
 
                 if instructorTieneRecibo:
                     instructor = (
                         db.session.query(Users)
-                        .filter_by(id_usuarios=instructorTieneRecibo.usuarios_id)
+                        .filter_by(id_usuarios=instructorTieneRecibo.user_id)
                         .first()
                     )
 
                 gestor = (
                     db.session.query(Users)
-                    .filter_by(id_usuarios=gestorTineneRecibo.usuarios_id)
+                    .filter_by(id_usuarios=gestorTineneRecibo.user_id)
                     .first()
                 )
                 asociado = (
                     db.session.query(Users)
-                    .filter_by(id_usuarios=asociadoTieneRecibo.usuarios_id)
+                    .filter_by(id_usuarios=asociadoTieneRecibo.user_id)
                     .first()
                 )
                 transaccion = (
                     db.session.query(Transactions)
-                    .filter_by(id_transacciones=recibo.transacciones_id)
+                    .filter_by(id_transacciones=recibo.transaction_id)
                     .first()
                 )
 
                 getAllItinerarios = (
                     db.session.query(Itineraries)
-                    .filter_by(RECIBOS_id_recibos=recibo.id_recibos)
+                    .filter_by(RECIBOS_id_recibos=recibo.id)
                     .all()
                 )
 
@@ -830,13 +829,13 @@ class RecibosController:
 
                     aeronave = (
                         db.session.query(Planes)
-                        .filter_by(id_aeronaves=itinerario.aeronaves_id)
+                        .filter_by(id_aeronaves=itinerario.plane_id)
                         .first()
                     )
 
                     codsAeros = (
                         db.session.query(ItineraryHasAirportCodes)
-                        .filter_by(itinerarios_id=itinerario.id_itinerarios)
+                        .filter_by(itinerarios_id=itinerario.id)
                         .all()
                     )
 
@@ -856,22 +855,22 @@ class RecibosController:
 
                     tipoItinerario = (
                         db.session.query(ItineraryTypes)
-                        .filter_by(id_tipo_itinerarios=itinerario.tipo_itinerarios_id)
+                        .filter_by(id_tipo_itinerarios=itinerario.itinerary_type_id)
                         .first()
                     )
 
-                    if type(itinerario.cantidad_aterrizajes) == int:
-                        numero = str(itinerario.cantidad_aterrizajes)
+                    if type(itinerario.landings_amount) == int:
+                        numero = str(itinerario.landings_amount)
                     else:
-                        numero = itinerario.cantidad_aterrizajes
+                        numero = itinerario.landings_amount
 
                     dictItinerario = {
-                        "horaSalida": itinerario.hora_salida,
-                        "codAeroSalida": codAeroSalida.codigo_aeropuerto,
-                        "horaLlegada": itinerario.hora_llegada,
-                        "codAeroLlegada": codAeroLlegada.codigo_aeropuerto,
+                        "horaSalida": itinerario.departure_time,
+                        "codAeroSalida": codAeroSalida.code,
+                        "horaLlegada": itinerario.landing_time,
+                        "codAeroLlegada": codAeroLlegada.code,
                         "cantAterrizajes": numero,
-                        "tipoItinerario": tipoItinerario.tipo,
+                        "tipoItinerario": tipoItinerario.name,
                     }
 
                     print(f"Un itinerario dict: {dictItinerario}")
@@ -881,12 +880,12 @@ class RecibosController:
 
                     devolverRecibo = [
                         {
-                            "numRecibo": recibo.numero_recibos,
-                            "asociado": asociado.nombre + " " + asociado.apellido,
+                            "numRecibo": recibo.invoice_identifier,
+                            "asociado": asociado.first_name + " " + asociado.last_name,
                             "instructor": instructor.nombre + " " + instructor.apellido,
-                            "gestor": gestor.nombre + " " + gestor.apellido,
-                            "precioTotal": transaccion.monto * (-1),
-                            "observaciones": recibo.observaciones,
+                            "gestor": gestor.first_name + " " + gestor.last_name,
+                            "precioTotal": transaccion.amount * (-1),
+                            "observaciones": recibo.details,
                             "matricula": aeronave.matricula,
                         }
                     ]
@@ -894,12 +893,12 @@ class RecibosController:
                 else:
                     devolverRecibo = [
                         {
-                            "numRecibo": recibo.numero_recibos,
-                            "asociado": asociado.nombre + " " + asociado.apellido,
+                            "numRecibo": recibo.invoice_identifier,
+                            "asociado": asociado.first_name + " " + asociado.last_name,
                             "instructor": "",
-                            "gestor": gestor.nombre + " " + gestor.apellido,
-                            "precioTotal": transaccion.monto * (-1),
-                            "observaciones": recibo.observaciones,
+                            "gestor": gestor.first_name + " " + gestor.last_name,
+                            "precioTotal": transaccion.amount * (-1),
+                            "observaciones": recibo.details,
                             "matricula": aeronave.matricula,
                         }
                     ]
