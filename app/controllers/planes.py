@@ -1,88 +1,73 @@
-from app.models.planes import Planes
-from app.controllers.plane_status import EstadoAeronavesController
-from ..extensions import db
+from flask import Blueprint, request
+
+from app.services.planes import obtenerAeronaves, crearAeronave, editarAeronave, disable_plane
+
+planes_bp = Blueprint('planes', __name__)
 
 
-class AeronavesController:
-    def __init__(self):
-        pass
+@planes_bp.get('/')
+def get_planes_endp():
+    try:
+        aeronaves = obtenerAeronaves()
+        if aeronaves:
+            return {'respuesta': aeronaves}, 200
+        else:
+            return {'error': 'No se encontraron las aeronaves'}, 404
+    except Exception as ex:
+        print(ex)
+        return {'error': 'ERROR'}, 401
 
-    def obtenerAeronavePorMatricula(self, matricula):
-        try:
-            aeronave = Planes.query.filter_by(matricula=matricula).first()
 
-            if aeronave:
-                estadoFound = EstadoAeronavesController.obtenerEstadosAeronaveById(
-                    EstadoAeronavesController, aeronave.estados_aeronaves_id
-                )
-                aeronave_data = {
-                    "marca": aeronave.marca,
-                    "modelo": aeronave.modelo,
-                    "matricula": aeronave.matricula,
-                    "potencia": aeronave.potencia,
-                    "clase": aeronave.clase,
-                    "fecha_adquisicion": aeronave.fecha_adquisicion,
-                    "consumo_por_hora": aeronave.consumo_por_hora,
-                    "path_documentacion": aeronave.path_documentacion,
-                    "descripcion": aeronave.descripcion,
-                    "path_imagen_aeronave": aeronave.path_imagen_aeronave,
-                    "estados": estadoFound.get("estado"),
-                }
-                return aeronave_data
-            else:
-                return False
-        except Exception as ex:
-            print(ex.args)
-            return False
-
-    def obtenerAeronaves(self):
-        idDeshabilitado = EstadoAeronavesController.obtenerIdEstadoDeshabilitada(EstadoAeronavesController)
-
-        aeronaves = Planes.query.filter(Planes.estados_aeronaves_id != idDeshabilitado.get("id")).all()
-        aeronave_list = []
-
-        for aeronave in aeronaves:
-            aeronave_data = {
-                "id_aeronaves": aeronave.id_aeronaves,
-                "marca": aeronave.marca,
-                "modelo": aeronave.modelo,
-                "matricula": aeronave.matricula,
-                "potencia": aeronave.potencia,
-                "clase": aeronave.clase,
-                "fecha_adquisicion": aeronave.fecha_adquisicion,
-                "consumo_por_hora": aeronave.consumo_por_hora,
-                "path_documentacion": aeronave.path_documentacion,
-                "descripcion": aeronave.descripcion,
-                "path_imagen_aeronave": aeronave.path_imagen_aeronave,
-                "estados_aeronaves_id": aeronave.estados_aeronaves_id,
-            }
-            aeronave_list.append(aeronave_data)
-        return aeronave_list
-
-    # al estar cargada no lo modificamos asi que no funciona como deberia en la db completa
-    def crearAeronave(self, data):
-        aeronave = Planes(**data)
-        db.session.add(aeronave)
-        db.session.commit()
-        return True
-
-    def editarAeronave(self, matricula, data):
-        aeronave = Planes.query.filter_by(matricula=matricula).first()
-        if aeronave:
-            for key, value in data.items():
-                setattr(aeronave, key, value)
-            db.session.commit()
-            return True
-        return False
-
-    def eliminarAeronave(self, matricula):
-        aeronave = Planes.query.filter_by(matricula=matricula).first()
-        idDeshabilitado = EstadoAeronavesController.obtenerIdEstadoDeshabilitada(
-            EstadoAeronavesController
-        )
+@planes_bp.get('/<str:registration>')
+def get_plane_endp(registration: str):
+    try:
+        aeronave = obtenerAeronavePorMatricula(registration)
 
         if aeronave:
-            aeronave.estados_aeronaves_id = idDeshabilitado.get("id")
-            db.session.commit()
-            return True
-        return False
+            return {'respuesta': aeronave}, 200
+        else:
+            return {'error': 'No se encontro la aeronave'}, 404
+    except Exception as ex:
+        print(ex)
+        return {'error': 'ERROR'}, 401
+
+
+@planes_bp.post('/')
+def create_plane_endp():
+    try:
+        data = request.get_json()
+        respuesta = crearAeronave(data)
+        if respuesta:
+            return {'message': 'Aeronave created successfully'}, 201
+        else:
+            return {'error': 'Some data is invalid'}, 400
+    except Exception as ex:
+        print(ex)
+        return {'error': 'An error occurred'}, 401
+
+
+@planes_bp.patch('/<str:registration>')
+def update_plane(registration: str):
+    try:
+        data = request.get_json()
+        respuesta = editarAeronave(registration, data)
+        if respuesta:
+            return {'message': 'Aeronave updated successfully'}, 200
+        else:
+            return {'error': 'Aeronave not found'}, 404
+    except Exception as ex:
+        print(ex)
+        return {'error': 'An error occurred'}, 401
+
+
+@planes_bp.delete('/<str:registration>')
+def delete_plane_endp(registration: str):
+    try:
+        respuesta = disable_plane(registration)
+        if respuesta:
+            return {'message': 'Aeronave deleted successfully'}, 200
+        else:
+            return {'error': 'Aeronave not found'}, 404
+    except Exception as ex:
+        print(ex)
+        return {'error': 'An error occurred'}, 401

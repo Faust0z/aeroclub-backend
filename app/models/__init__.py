@@ -3,7 +3,6 @@ from .balances import Balances
 from .plane_status import PlaneStatus
 from .itineraries import Itineraries
 from .itinerary_types import ItineraryTypes
-from .invoice_types import ReceiptTypes
 from .fares import Fares
 from .transactions import Transactions
 from .payment_types import PaymentTypes

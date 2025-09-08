@@ -1,114 +1,66 @@
-from app.models.users import Users
-from app.models.roles import Roles
-from app.controllers.users import UsuariosController
-from ..extensions import db
+from flask import Blueprint, request
+
+from app.services.roles import editarRol, eliminarRol
+from app.services.users import obtenerUsuarioPorEmail
+
+roles_bp = Blueprint("roles", __name__)
 
 
-class RolesController:
-    def __init__(self):
-        pass
+@roles_bp.get("/")
+def create_role_endp():
+    try:
+        data = request.get_json()
+        respuesta = editarRol(data)
+        if respuesta == 1:
+            return {"error": "Ese rol no esta permitido"}, 400
+        if respuesta == 2:
+            return {"message": "Ya posee ese rol"}, 200
+        if respuesta == 3:
+            return {"message": "El rol se le asigno correctamente"}, 200
+        if respuesta == 4:
+            return {
+                "error": "El mail no es válido y no esta asociado a una cuenta"
+            }, 404
+    except Exception as ex:
+        print(ex)
+        return {"error": "ocurrio un error"}, 401
 
-    def __chequearArrayRoles(self, roles, rol):
-        resultado = [x for x in roles if x.get("tipo") == rol]
 
-        if resultado:
-            return True
+@roles_bp.get("/<str:email>")
+def get_user_roles(email: str):
+    try:
+        getUsuario = obtenerUsuarioPorEmail(email)
+
+        if getUsuario:
+            arrayRoles = []
+            rolesGetUsuario = getUsuario.get("roles")
+            for rol in rolesGetUsuario:
+                arrayRoles.append(rol.get("tipo"))
+            return {"roles": arrayRoles}, 200
         else:
-            return False
+            return {"error": "No se encontro un usuario con este email"}, 404
+    except Exception as ex:
+        print(ex)
+        return {"error": "ocurrio un error"}, 401
 
-    def __chequearRolesPermitidos(self, rol):
-        rolesPermitidos = ["Asociado", "Gestor", "Instructor"]
 
-        resultado = [x for x in rolesPermitidos if x == rol]
-        if resultado:
-            return True
-        else:
-            return False
-
-    def editarRol(self, data):
-        # Obtenemos el userDictionary
-        userDictionary = UsuariosController.obtenerUsuarioPorEmail(self, data.get("email"))
-
-        try:
-            if self.__chequearRolesPermitidos(data.get("rol")):
-                if self.__chequearArrayRoles(userDictionary.get("roles"), data.get("rol")):
-                    return 2
-                else:
-                    # nos traemos la data del rol que se paso por el endpoint
-                    rol = data.get("rol")
-                    rolDictionary = db.session.execute(
-                        db.select(Roles).filter_by(tipo=rol)
-                    ).scalar_one()
-                    # creo el usuarioTieneRoles
-
-                    # TODO: this broke down when the associations where changed to Tables
-                    # usuarioTieneRoles = UsersHaveRoles(
-                    #    0, userDictionary.get("id_usuarios"), rolDictionary.id
-                    # )
-                    # db.session.add(usuarioTieneRoles)
-                    db.session.commit()
-                    return 3
-            else:
-                return 1
-
-        except Exception as ex:
-            print(ex)
-            return 4
-
-    def eliminarRol(self, data):
-        # Obtenemos el userDictionary
-        userDictionary = UsuariosController.obtenerUsuarioPorEmail(self, data.get("email"))
-
-        try:
-            if self.__chequearRolesPermitidos(data.get("rol")):
-                if self.__chequearArrayRoles(
-                        userDictionary.get("roles"), data.get("rol")
-                ):
-                    rolData = data.get("rol")
-                    id_usuario = userDictionary.get("id_usuarios")
-                    rolEncontrado = db.session.execute(
-                        db.select(Roles).filter_by(tipo=rolData)
-                    ).scalar_one()
-
-                    rol_id = rolEncontrado.id
-
-                    # TODO: this broke down when the associations where changed to Tables
-                    #                    usuarioTieneRoles = db.session.execute(
-                    #                        db.select(UsersHaveRoles).filter_by(
-                    #                            usuarios_id=id_usuario, roles_id=rol_id
-                    #                       )
-                    #                   ).scalar_one()
-                    #
-                    #                    db.session.delete(usuarioTieneRoles)
-                    db.session.commit()
-                    return 2
-                else:
-                    return 3
-            else:
-                return 1
-        except Exception as ex:
-            print(ex)
-            return 4
-
-    def asignarAsociadoPorDefecto(self, email):
-        try:
-            # Obtenemos el userDictionary
-            userDictionary = UsuariosController.obtenerUsuarioPorEmail(self, email)
-
-            rolDictionary = db.session.execute(
-                db.select(Roles).filter_by(tipo="Asociado")
-            ).scalar_one()
-            # creo el usuarioTieneRoles
-            # TODO: this broke down when the associations where changed to Tables
-
-            #            usuarioTieneRoles = UsersHaveRoles(
-            #                0, userDictionary.get("id_usuarios"), rolDictionary.id
-            #            )
-
-            #            db.session.add(usuarioTieneRoles)
-            db.session.commit()
-
-            return True
-        except Exception as ex:
-            print(ex)
-            return False
+@roles_bp.delete("/")
+def delete_role_endp():
+    try:
+        data = request.get_json()
+        respuesta = eliminarRol(data)
+        if respuesta == 1:
+            return {"error": "Ese rol no esta permitido"}, 400
+        if respuesta == 2:
+            return {"message": "Se elimino el rol correctamente"}, 200
+        if respuesta == 3:
+            return {
+                "error": "El rol que quiere eliminar no lo posee, asi que no se realiza acciones"
+            }, 400
+        if respuesta == 4:
+            return {
+                "error": "El mail no es válido y no esta asociado a una cuenta"
+            }, 404
+    except Exception as ex:
+        print(ex)
+        return {"error": "ocurrio un error"}, 401

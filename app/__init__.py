@@ -2,14 +2,13 @@ from flask import Flask
 import os
 from flask_migrate import Migrate
 from flask_cors import CORS
-from app.routes.usuarios import usuarios_bp
-from app.routes.aeronaves import aeronaves_bp
-from app.routes.roles import roles_bp
-from app.routes.reciboVuelos import reciboVuelos_bp
-from app.routes.auth import auth_bp
-from app.routes.transacciones import transacciones_bp
-from app.routes.cuentaCorriente import cuentaCorriente_bp
-from app.routes.recibosPDF import reciboPDF_bp
+from app.controllers.users import users_bp
+from app.controllers.planes import planes_bp
+from app.controllers.roles import roles_bp
+from app.controllers.invoices import invoices_bp
+from app.controllers.auth import auth_bp
+from app.controllers.transactions import transactions_bp
+from app.controllers.balances import balances_bp
 from .extensions import db
 from .config.settings import DB_URI, SQLA_TRACK_MODIFICATIONS, SECRET_KEY, DEBUG
 
@@ -30,13 +29,13 @@ def create_app():
 
     migrate = Migrate(app, db)
 
-    app.register_blueprint(usuarios_bp, url_prefix='/usuarios')
-    app.register_blueprint(aeronaves_bp, url_prefix='/aeronaves')
+    app.register_blueprint(users_bp, url_prefix='/usuarios')
+    app.register_blueprint(planes_bp, url_prefix='/aeronaves')
     app.register_blueprint(roles_bp, url_prefix='/roles')
-    app.register_blueprint(reciboVuelos_bp, url_prefix='/recibo-vuelos')
+    app.register_blueprint(invoices_bp, url_prefix='/recibo-vuelos')
     app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(transacciones_bp, url_prefix='/transacciones')
-    app.register_blueprint(cuentaCorriente_bp, url_prefix='/cuentaCorriente')
-    app.register_blueprint(reciboPDF_bp, url_prefix='/recibo-pdf')
+    app.register_blueprint(transactions_bp, url_prefix='/transacciones')
+    app.register_blueprint(balances_bp, url_prefix='/cuentaCorriente')
+    app.register_blueprint(PDF_invoices_bp, url_prefix='/recibo-pdf')
 
     return app

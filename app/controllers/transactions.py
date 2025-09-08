@@ -1,84 +1,66 @@
-from app.models.transactions import Transactions
-from app.models.payment_types import PaymentTypes
+from flask import Blueprint, request
 from app.models.balances import Balances
-from app.models.users import Users
-from app.models.payment_types import PaymentTypes
-from ..extensions import db
+from app.services.balances import get_user_balance_srv
+from app.services.transactions import obtenerTransacciones, obtener_transaccion
+
+transactions_bp = Blueprint("transactions", __name__)
 
 
-class TransaccionesController:
-    def _init_(self):
-        pass
-
-    def __chequearTipoPago(self, tipoPago):
-        tipos = ["Cheque", "Efectivo", "Transferencia"]
-        print(f"__chequearTipoPago tipoPago entro: {tipoPago}")
-        resultado = [x for x in tipos if x == tipoPago]
-
-        if resultado:
-            return True
+@transactions_bp.get("/")
+def get_transactions():
+    try:
+        transacciones = obtenerTransacciones()
+        if transacciones:
+            return {"response": transacciones}, 200
         else:
-            return False
+            return {"error": "ERROR"}, 404
 
-    def crearTransaccion(self, monto, fecha, motivo, tipoPago, idCuentaCorriente):
-        try:
-            # chequeando el tipo de pago
-            if self.__chequearTipoPago(self.__chequearTipoPago, tipoPago):
-                # aca me traigo el tipoPago para obtener su id
-                tipoPagoDictionary = db.session.query(PaymentTypes).filter_by(tipo=tipoPago).first()
+    except Exception as ex:
+        print(ex)
+        return {"error": "ERROR"}, 401
 
-                transaccion = Transactions(None, monto, fecha, motivo, tipoPagoDictionary.id, idCuentaCorriente)
 
-                db.session.add(transaccion)
-                db.session.commit()
+@transactions_bp.get("/user/<str:email>")
+def get_user_transactions_endp(email: str):
+    try:
+        # buscar la cuenta corriente asociada a ese usuario
+        cuenta_corriente = get_user_balance_srv(email)
 
-                return transaccion
+        if cuenta_corriente:
+            # Usar el ID de la cuenta corriente para obtener las transacciones
+            transacciones = obtener_transaccion(cuenta_corriente.id)
 
+            if transacciones:
+                return {"response": transacciones}, 200
             else:
-                return False
-        except Exception as ex:
-            print(ex)
-            return False
+                return {"error": "No se encontraron transacciones para este usuario"}, 404
+        else:
+            return {"error": "No se encontró la cuenta corriente para este usuario"}, 404
+    except Exception as ex:
+        print(ex)
+        return {"error": "ERROR"}, 401
 
-    def obtenerTransacciones(self):
-        try:
-            transacciones = Transactions.query.all()
-            transaccion_list = []
 
-            for transaccion in transacciones:
-                idCuentaCorriente = transaccion.balance_id
-                cuentaCorriente = db.session.query(Balances).filter_by(id_cuenta_corriente=idCuentaCorriente).first()
-                usuario = db.session.query(Users).filter_by(id_usuarios=cuentaCorriente.user_id).first()
-                tipoPago = db.session.query(PaymentTypes).filter_by(id_tipo_pago=transaccion.fare_type_id).first()
-                transaccion_data = {
-                    'id_transacciones': transaccion.id_transacciones,
-                    'nombre_completo_usuario': usuario.first_name + " " + usuario.last_name,
-                    'monto': transaccion.amount,
-                    'fecha': transaccion.issued_date,
-                    'motivo': transaccion.description,
-                    'tipo_pago_id': tipoPago.name,
-                    'cuenta_corriente_id': transaccion.balance_id,
-                }
-                transaccion_list.append(transaccion_data)
-            return transaccion_list
+@transactions_bp.post("/")
+def create_transaction_endp():
+    try:
+        data = request.get_json()
+        monto = data.get("monto")
+        idUsuario = data.get("idUsuario")
+        motivo = data.get("motivo")
+        tipoPago = data.get("tipoPago")
+        fecha = data.get("fecha")
+        idCuenta = get_user_balance_srv(idUsuario)
 
-        except Exception as ex:
-            print(ex)
-            return False
-
-    # Obtener todas las transacciones de un usuario según su id
-    def obtener_transaccion(self, cuenta_corriente_id):
-        transaccion_uid = Transactions.query.filter_by(cuenta_corriente_id=cuenta_corriente_id)
-        transaccion_uid_list = []
-
-        for transaccion in transaccion_uid:
-            transaccion_data = {
-                'id_transacciones': transaccion.id_transacciones,
-                'monto': transaccion.amount,
-                'fecha': transaccion.issued_date,
-                'motivo': transaccion.description,
-                'tipo_pago_id': transaccion.fare_type_id,
-                'cuenta_corriente_id': transaccion.balance_id,
-            }
-            transaccion_uid_list.append(transaccion_data)
-        return transaccion_uid_list
+        if idCuenta:
+            respuesta = update_balance_srv(idUsuario, monto, fecha, motivo, tipoPago)
+            ## respuesta = transaccion_controller.crearTransaccion(monto, fecha, motivo,tipoPago,idCuentaCorriente)
+            if respuesta:
+                return {"message": "Transaccion created successfully"}, 201
+            else:
+                return {"error": "Some data is invalid"}, 400
+        else:
+            return {"error": "El usuario no posee una cuenta"}, 404
+    except Exception as ex:
+        print(ex)
+        return {"error": "An error occurred"}, 401
