@@ -7,8 +7,8 @@ class Invoices(db.Model):
     id: db.Mapped[int] = db.Column(db.Integer, primary_key=True, autoincrement=True)
     issued_date: db.Mapped[date] = db.Column(db.Date, nullable=False)
     observations: db.Mapped[str] = db.Column(db.Text)
-    invoice_type_id: db.Mapped[int] = db.Column(db.Integer, db.ForeignKey("receipt_types.id"))
-    transaction_id: db.Mapped[int] = db.Column(db.Integer, db.ForeignKey("transactions.id"))
+    invoice_type_id: db.Mapped[int] = db.Column(db.ForeignKey("receipt_types.id"))
+    transaction_id: db.Mapped[int] = db.Column(db.ForeignKey("transactions.id"))
     invoice_identifier: db.Mapped[int] = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):

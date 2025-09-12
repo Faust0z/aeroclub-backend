@@ -9,3 +9,6 @@ DB_URI = os.getenv("DB_URI")
 SQLA_TRACK_MODIFICATIONS = False
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = True
+
+# CORS allowed origins (comma-separated in .env)
+CORS_ORIGINS: list[str] = os.getenv("CORS_ORIGINS").split(",")

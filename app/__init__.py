@@ -1,5 +1,4 @@
 from flask import Flask
-import os
 from flask_migrate import Migrate
 from flask_cors import CORS
 from app.controllers.users import users_bp
@@ -10,7 +9,7 @@ from app.controllers.auth import auth_bp
 from app.controllers.transactions import transactions_bp
 from app.controllers.balances import balances_bp
 from .extensions import db
-from .config.settings import DB_URI, SQLA_TRACK_MODIFICATIONS, SECRET_KEY, DEBUG
+from .config.settings import DB_URI, SQLA_TRACK_MODIFICATIONS, SECRET_KEY, DEBUG, CORS_ORIGINS
 
 
 def create_app():
@@ -22,7 +21,7 @@ def create_app():
 
     db.init_app(app)
 
-    CORS(app)
+    CORS(app, resources={r"/*": {"origins": CORS_ORIGINS}})
 
     with app.app_context():
         db.create_all()

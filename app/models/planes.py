@@ -11,7 +11,7 @@ class Planes(db.Model):
     acquisition_date: db.Mapped[db.Date] = db.mapped_column(db.Date, nullable=False)
     consumption_per_hour: db.Mapped[int] = db.mapped_column(db.Integer, nullable=False)
     description: db.Mapped[str] = db.mapped_column(db.Text)
-    plane_status_id: db.Mapped[int] = db.mapped_column(db.Integer, db.ForeignKey('plane_status.id'))
+    plane_status_id: db.Mapped[int] = db.mapped_column(db.ForeignKey('plane_status.id'))
 
     def __repr__(self):
         return (f"<Plane "

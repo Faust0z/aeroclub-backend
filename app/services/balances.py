@@ -36,9 +36,7 @@ def update_balance_srv(usuario_id, monto, fecha, motivo, tipoPago):
     print(f"transaccion: {transaccion}")
     if (cuenta_corriente) and (transaccion):
         print(f"transaccion: {transaccion.amount}")
-        cuenta_corriente.balance = (
-                cuenta_corriente.balance + transaccion.amount
-        )
+        cuenta_corriente.balance = (cuenta_corriente.balance + transaccion.amount)
         db.session.commit()
         return transaccion
     return False
