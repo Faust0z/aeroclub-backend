@@ -1,8 +1,8 @@
-from marshmallow import fields, validate, post_load
+from marshmallow import fields, validate
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema, auto_field
-from werkzeug.security import generate_password_hash
 from .models import Users, Roles, Transactions, Planes, PlaneStatus, PaymentTypes, ItineraryTypes, Itineraries, Invoices, Fares, \
     Balances, AirportCodes
+from .extensions import db
 
 
 class AirportCodesSchema(SQLAlchemyAutoSchema):
@@ -10,7 +10,7 @@ class AirportCodesSchema(SQLAlchemyAutoSchema):
         model = AirportCodes
         load_instance = True
         include_fk = False
-        exclude = ("id", "itineraries")
+        exclude = ("id", "itineraries",)
 
 
 class BalancesSchema(SQLAlchemyAutoSchema):
@@ -175,12 +175,6 @@ class UserRegisterSchema(SQLAlchemyAutoSchema):
     email = auto_field(required=True)
     password = auto_field(required=True, load_only=True, validate=validate.Length(min=8))
 
-    @post_load
-    def hash_password(self, data, **kwargs):
-        if "password" in data:
-            data["password"] = generate_password_hash(data["password"])
-        return data
-
 
 class UsersSchema(SQLAlchemyAutoSchema):
     class Meta:
@@ -218,7 +212,7 @@ class UsersAdminSchema(SQLAlchemyAutoSchema):
         model = Users
         load_instance = True
         include_fk = False
-        exclude = ("invoices", "password")
+        exclude = ("invoices", "password",)
 
     first_name = auto_field(required=False)
     last_name = auto_field(required=False)

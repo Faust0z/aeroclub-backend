@@ -1,102 +1,41 @@
-from app.models.users import Users
-from ..services.balances import create_balance_srv
+from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import joinedload
+from sqlalchemy.exc import IntegrityError
+from datetime import date
+
+from .roles import get_role_by_name_srv
+from ..models import Users, Roles
+from ..services.balances import create_balance_srv
 from ..extensions import db
 
-from datetime import datetime
-from operator import or_
-from app.models.roles import Roles
+
+def get_users_srv(email: str | None = None, first_name: str | None = None, last_name: str | None = None,
+                  role_name: str | None = None, include_inactive: bool = False) -> list[Users]:
+    stmt = db.select(Users).options(joinedload(Users.roles))
+
+    if email:
+        stmt = stmt.where(Users.email == email)
+    if first_name:
+        stmt = stmt.where(Users.first_name.ilike(f"%{first_name}%"))
+    if last_name:
+        stmt = stmt.where(Users.last_name.ilike(f"%{last_name}%"))
+    if role_name:
+        stmt = stmt.join(Users.roles).where(Roles.name == role_name)
+    if not include_inactive:
+        stmt = stmt.where(Users.status != 0)
+
+    return db.session.execute(stmt).unique().scalars().all()
 
 
-def obtenerUsuarioPorEmail(mail):
-    # Cargar la relación 'roles' utilizando joinedload
-    userMalFormato = db.session.query(Users).filter_by(email=mail).options(joinedload(Users.roles)).first()
+def get_user_by_email_srv(email: str = None, include_roles: bool = False) -> Users:
+    stmt = db.select(Users)
+    stmt = stmt.where(Users.email == email)
 
-    if not userMalFormato:
-        return False
+    if include_roles:
+        stmt = stmt.options(joinedload(Users.roles))
 
-    usuario = {'id_usuarios': userMalFormato.id_usuarios,
-               'nombre': userMalFormato.first_name,
-               'apellido': userMalFormato.last_name,
-               'email': userMalFormato.email,
-               'telefono': userMalFormato.phone_number,
-               'dni': userMalFormato.dni,
-               'fecha_alta': userMalFormato.created_at,
-               'fecha_baja': userMalFormato.disabled_at,
-               'direccion': userMalFormato.address,
-               'foto_perfil': userMalFormato.foto_perfil,
-               'estado_hab_des': userMalFormato.status,
-               'roles': [
-                   {
-                       'id_roles': role.id,
-                       'tipo': role.name,
-                   }
-                   for role in userMalFormato.roles
-               ]
+    return db.session.scalar(stmt)
 
-               }
-    return usuario
-
-def obtenerUsuarios():
-    # Cargar la relación 'roles' utilizando joinedload
-    users = db.session.query(Users).options(joinedload(Users.roles)).all()
-
-    users = Users.query.all()
-    user_list = [{'id_usuarios': user.id_usuarios,
-                  'nombre': user.first_name,
-                  'apellido': user.last_name,
-                  'email': user.email,
-                  'telefono': user.phone_number,
-                  'dni': user.dni,
-                  'fecha_alta': user.created_at,
-                  'fecha_baja': user.disabled_at,
-                  'direccion': user.address,
-                  'foto_perfil': user.foto_perfil,
-                  'estado_hab_des': user.status,
-                  'roles': [
-                      {
-                          'id_roles': role.id,
-                          'tipo': role.name,
-                      }
-                      for role in user.roles
-                  ]  # Incluye los datos de la relación 'roles'
-                  } for user in users if user.status != 0]
-    return user_list
-
-def crearUsuario(data):
-    try:
-        id_usuarios = data.get('id_usuarios')
-        nombre = data.get('nombre')
-        apellido = data.get('apellido')
-        email = data.get('email')
-        telefono = data.get('telefono')
-        dni = data.get('dni')
-        fecha_alta = data.get('fecha_alta')
-        fecha_baja = data.get('fecha_baja')
-        direccion = data.get('direccion')
-        foto_perfil = data.get('foto_perfil')
-        estado_hab_des = data.get('estado_hab_des')
-
-        fecha_alta = datetime.now()
-        estado_hab_des = 1
-        # hacer un control exacto de cada input para devolver el error exacto
-        if not email:
-            return False
-
-        usuario = Users(id_usuarios=id_usuarios, nombre=nombre, apellido=apellido,
-                        email=email, telefono=telefono,
-                        dni=dni, fecha_alta=fecha_alta,
-                        fecha_baja=fecha_baja, direccion=direccion,
-                        foto_perfil=foto_perfil, estado_hab_des=estado_hab_des)
-        db.session.add(usuario)
-        db.session.commit()
-
-        # se crea la cuenta del usuario
-        create_balance_srv(usuario.id_usuarios)
-        return True
-    except Exception as ex:
-        print(ex.args)
-        return False
 
 def editarUsuario(email, data):
     # solo trae el dicc y no la clase de la bd
@@ -134,110 +73,34 @@ def editarUsuario(email, data):
     db.session.commit()
     return True
 
+
 def eliminarUsuario(email):
-    user = obtenerUsuarioPorEmail(email)
-    usuario = Users.query.get(user["id_usuarios"])
+    user = get_user_by_email_srv(email)
 
-    if not usuario:
+    if not user:
         return False
 
-    usuario.status = 0
+    with db.session.begin():
+        user.status = False
+        return True
+
+
+def register_user_srv(user: Users) -> tuple[bool, str]:
+    user.password = generate_password_hash(user.password)
+    user.created_at = date.today()
+    user.roles = get_role_by_name_srv("User")
+    user.status = True
+
+    db.session.add(user)
+    db.session.flush()  # To make sure we can get the ID
+
+    create_balance_srv(balance=0, user_id=user.id)
     db.session.commit()
-    return True
+    return True, "User created successfully"
 
-def obtenerUsuarioPorNombre(nombre):
-    usuarioNombre = db.session.query(Users).filter(
-        or_(Users.first_name.like(f'%{nombre}%'), Users.last_name.like(f'%{nombre}%'))).all()
-    if not usuarioNombre:
-        return False
 
-    resultados_json = [
-        {'id_usuarios': usuario.id_usuarios, 'nombre': usuario.first_name, 'apellido': usuario.last_name,
-         'email': usuario.email}
-        for usuario in usuarioNombre]
-
-    return resultados_json
-
-def obtenerInstructores():
-    try:
-        # Obtener id_usuarios de UsersHaveRoles con id_roles == 2
-        rolInstructor = db.session.query(Roles).filter_by(tipo='Instructor').first()
-        instructores_id = db.session.query(Users).filter_by(roles_id=rolInstructor.id).all()
-
-        # Almacena los id_usuarios en una lista
-        id_usuarios_rol_dos = [usuario.user_id for usuario in instructores_id]
-
-        # Obtener los datos de los usuarios del array id_usuarios_rol_dos
-        instructores_list = db.session.query(Users).filter(Users.id_usuarios.in_(id_usuarios_rol_dos)).all()
-
-        # Construir la lista con los datos de cada instrutor
-        instructores_data = [
-            {
-                'id_usuarios': instructor.id_usuarios,
-                'nombre': instructor.first_name,
-                'apellido': instructor.last_name,
-                'email': instructor.email,
-                'telefono': instructor.phone_number,
-                'dni': instructor.dni,
-                'fecha_alta': instructor.created_at,
-                'fecha_baja': instructor.disabled_at,
-                'direccion': instructor.address,
-                'foto_perfil': instructor.foto_perfil,
-                'estado_hab_des': instructor.status,
-                'roles': [
-                    {
-                        'id_roles': rol.id,
-                        'tipo': rol.name,
-                    }
-                    for rol in instructor.roles if rol.id == 2
-                ]
-            }
-            for instructor in instructores_list if instructor.status != 0
-        ]
-
-        return instructores_data
-    except Exception as ex:
-        print(ex.args)
-        return False
-
-def obtenerAsociados():
-    try:
-        # Obtener id_usuarios de UsersHaveRoles con id_roles == 2
-        rolAsociado = db.session.query(Roles).filter_by(tipo='Asociado').first()
-        asociado_id = db.session.query(Users).filter_by(roles_id=rolAsociado.id).all()
-
-        # Almacena los id_usuarios en una lista
-        id_usuarios_rol_asociado = [usuario.user_id for usuario in asociado_id]
-
-        # Obtener los datos de los usuarios del array id_usuarios_rol_asociado
-        asociados_list = db.session.query(Users).filter(Users.id_usuarios.in_(id_usuarios_rol_asociado)).all()
-
-        # Construir la lista con los datos de cada instrutor
-        asociados_data = [
-            {
-                'id_usuarios': asociado.id_usuarios,
-                'nombre': asociado.first_name,
-                'apellido': asociado.last_name,
-                'email': asociado.email,
-                'telefono': asociado.phone_number,
-                'dni': asociado.dni,
-                'fecha_alta': asociado.created_at,
-                'fecha_baja': asociado.disabled_at,
-                'direccion': asociado.address,
-                'foto_perfil': asociado.foto_perfil,
-                'estado_hab_des': asociado.status,
-                'roles': [
-                    {
-                        'id_roles': rol.id,
-                        'tipo': rol.name,
-                    }
-                    for rol in asociado.roles if rol.id
-                ]
-            }
-            for asociado in asociados_list if asociado.status != 0
-        ]
-
-        return asociados_data
-    except Exception as ex:
-        print(ex.args)
-        return False
+def authenticate_user_srv(email: str, password: str) -> Users | None:
+    user = get_user_by_email_srv(email)
+    if not user or not check_password_hash(user.password, password):
+        return None
+    return user

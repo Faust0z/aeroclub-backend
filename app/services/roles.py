@@ -3,6 +3,10 @@ from app.models.roles import Roles
 from ..extensions import db
 
 
+def get_role_by_name_srv(name: str) -> Roles:
+    return db.session.scalars(db.select(Roles).where(Roles.name == name)).all()
+
+
 def __chequearArrayRoles(roles, rol):
     resultado = [x for x in roles if x.get("tipo") == rol]
 
@@ -87,27 +91,3 @@ def eliminarRol(data):
     except Exception as ex:
         print(ex)
         return 4
-
-
-def asignarAsociadoPorDefecto(email):
-    try:
-        # Obtenemos el userDictionary
-        userDictionary = obtenerUsuarioPorEmail(None, email)
-
-        rolDictionary = db.session.execute(
-            db.select(Roles).filter_by(tipo="Asociado")
-        ).scalar_one()
-        # creo el usuarioTieneRoles
-        # TODO: this broke down when the associations where changed to Tables
-
-        #            usuarioTieneRoles = UsersHaveRoles(
-        #                0, userDictionary.get("id_usuarios"), rolDictionary.id
-        #            )
-
-        #            db.session.add(usuarioTieneRoles)
-        db.session.commit()
-
-        return True
-    except Exception as ex:
-        print(ex)
-        return False
