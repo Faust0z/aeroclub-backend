@@ -7,5 +7,7 @@ class PaymentTypes(db.Model):
     type: db.Mapped[str] = db.Column(db.String, nullable=False, unique=True)
     details: db.Mapped[str] = db.Column(db.Text, nullable=True)
 
+    transaction: db.Mapped[list["Transactions"]] = db.relationship(back_populates="payment_types")
+
     def __repr__(self):
         return f"type=<{self.type} details={self.details}>"

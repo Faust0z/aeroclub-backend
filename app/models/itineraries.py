@@ -1,6 +1,7 @@
-from ..extensions import db
-from .associations import itinerary_has_airport_codes
 from datetime import datetime
+
+from .associations import itinerary_has_airport_codes
+from ..extensions import db
 
 
 class Itineraries(db.Model):
@@ -16,6 +17,9 @@ class Itineraries(db.Model):
 
     airport_codes: db.Mapped[list["AirportCodes"]] = db.relationship('AirportCodes', secondary=itinerary_has_airport_codes,
                                                                      back_populates="itineraries")
+    invoice: db.Mapped["Invoices"] = db.relationship(back_populates="itineraries")
+    itineary_type: db.Mapped["ItineraryTypes"] = db.relationship(back_populates="itineraries")
+    plane: db.Mapped["Planes"] = db.relationship(back_populates="itineraries")
 
     def __repr__(self):
         return f"<departure_time={self.departure_time} landing_time={self.landing_time} landing_number={self.landings_amount}>"

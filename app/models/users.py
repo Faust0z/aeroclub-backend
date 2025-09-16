@@ -1,6 +1,7 @@
+from datetime import date
+
 from .associations import users_have_roles, users_have_invoices
 from ..extensions import db
-from datetime import date
 
 
 class Users(db.Model):
@@ -16,6 +17,7 @@ class Users(db.Model):
     address: db.Mapped[str] = db.Column(db.String)
     status: db.Mapped[bool] = db.Column(db.Boolean, nullable=False)
 
+    balance: db.Mapped["Balances"] = db.relationship(back_populates="users")
     roles: db.Mapped[list["Roles"]] = db.relationship("Roles", secondary=users_have_roles, back_populates="users")
     invoices: db.Mapped[list["Invoices"]] = db.relationship("Invoices", secondary=users_have_invoices, back_populates="users")
 

@@ -1,6 +1,7 @@
+from datetime import date
+
 from .associations import users_have_invoices
 from ..extensions import db
-from datetime import date
 
 
 class Invoices(db.Model):
@@ -11,7 +12,9 @@ class Invoices(db.Model):
     transaction_id: db.Mapped[int] = db.Column(db.ForeignKey("transactions.id"))
     invoice_identifier: db.Mapped[int] = db.Column(db.Integer, nullable=False)
 
-    users: db.Mapped[list["Users"]] = db.relationship("Users", secondary=users_have_invoices, back_populates="invoices")
+    user: db.Mapped[list["Users"]] = db.relationship("Users", secondary=users_have_invoices, back_populates="invoices")
+    transaction: db.Mapped[list["Transactions"]] = db.relationship(back_populates="invoices")
+    itinerary: db.Mapped[list["Itineraries"]] = db.relationship(back_populates="invoices")
 
     def __repr__(self):
         return f"<issued_date={self.issued_date} invoice_identifier={self.invoice_identifier}>"

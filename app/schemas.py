@@ -1,8 +1,8 @@
 from marshmallow import fields, validate
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema, auto_field
+
 from .models import Users, Roles, Transactions, Planes, PlaneStatus, PaymentTypes, ItineraryTypes, Itineraries, Invoices, Fares, \
     Balances, AirportCodes
-from .extensions import db
 
 
 class AirportCodesSchema(SQLAlchemyAutoSchema):
@@ -159,9 +159,10 @@ class TransactionsSchema(SQLAlchemyAutoSchema):
     amount = auto_field(required=True)
     issued_date = auto_field(required=True)
     description = auto_field(required=False, allow_none=True)
+    payment_type = fields.Nested(PaymentTypesSchema, required=True)
 
 
-class UserRegisterSchema(SQLAlchemyAutoSchema):
+class UsersRegisterSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = Users
         load_instance = True
@@ -190,6 +191,19 @@ class UsersSchema(SQLAlchemyAutoSchema):
     email = auto_field(dump_only=True)
     created_at = auto_field(dump_only=True)
     roles = fields.Nested(RolesSchema, many=True, dump_only=True)
+
+
+class UsersUpdateSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Users
+        load_instance = True
+        include_fk = False
+        exclude = ("id", "invoices", "disabled_at", "status", "password",)
+
+    first_name = auto_field(required=False)
+    last_name = auto_field(required=False)
+    phone_number = auto_field(required=False)
+    address = auto_field(required=False, allow_none=True)
 
 
 class UsersInstructorSchema(SQLAlchemyAutoSchema):
