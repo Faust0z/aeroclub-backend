@@ -30,13 +30,11 @@ def create_app():
 
     migrate = Migrate(app, db)
 
-    app.register_blueprint(users_bp, url_prefix='/usuarios')
-    app.register_blueprint(planes_bp, url_prefix='/aeronaves')
-    app.register_blueprint(roles_bp, url_prefix='/roles')
-    app.register_blueprint(invoices_bp, url_prefix='/recibo-vuelos')
-    app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(transactions_bp, url_prefix='/transacciones')
-    app.register_blueprint(balances_bp, url_prefix='/cuentaCorriente')
-    app.register_blueprint(PDF_invoices_bp, url_prefix='/recibo-pdf')
+    app.register_blueprint(users_bp)
+    app.register_blueprint(planes_bp)
+    app.register_blueprint(roles_bp)
+    app.register_blueprint(invoices_bp)
+    app.register_blueprint(transactions_bp)
+    app.register_blueprint(balances_bp)
 
     return app

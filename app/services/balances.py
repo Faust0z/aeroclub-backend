@@ -3,10 +3,6 @@ from .transactions import crearTransaccion
 from ..extensions import db
 
 
-def create_balance_srv(balance: int, user_id: int):
-    db.session.add(Balances(balance=balance, user_id=user_id))
-
-
 def get_user_balance_srv(idAsociado):
     try:
         cuantaCorrienteAsociado = Balances.query.filter_by(usuarios_id=idAsociado).first()

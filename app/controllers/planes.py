@@ -2,7 +2,7 @@ from flask import Blueprint, request
 
 from app.services.planes import obtenerAeronaves, crearAeronave, editarAeronave, disable_plane
 
-planes_bp = Blueprint('planes', __name__)
+planes_bp = Blueprint('planes', __name__, url_prefix='/planes')
 
 
 @planes_bp.get('/')
@@ -18,7 +18,7 @@ def get_planes_endp():
         return {'error': 'ERROR'}, 401
 
 
-@planes_bp.get('/<str:registration>')
+@planes_bp.get('/<string:registration>')
 def get_plane_endp(registration: str):
     try:
         aeronave = obtenerAeronavePorMatricula(registration)
@@ -46,7 +46,7 @@ def create_plane_endp():
         return {'error': 'An error occurred'}, 401
 
 
-@planes_bp.patch('/<str:registration>')
+@planes_bp.patch('/<string:registration>')
 def update_plane(registration: str):
     try:
         data = request.get_json()
@@ -60,7 +60,7 @@ def update_plane(registration: str):
         return {'error': 'An error occurred'}, 401
 
 
-@planes_bp.delete('/<str:registration>')
+@planes_bp.delete('/<string:registration>')
 def delete_plane_endp(registration: str):
     try:
         respuesta = disable_plane(registration)

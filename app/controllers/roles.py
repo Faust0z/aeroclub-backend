@@ -1,9 +1,9 @@
 from flask import Blueprint, request
 
 from app.services.roles import editarRol, eliminarRol
-from app.services.users import obtenerUsuarioPorEmail
+from app.services.users import get_user_by_email_srv
 
-roles_bp = Blueprint("roles", __name__)
+roles_bp = Blueprint("roles", __name__, url_prefix='/roles')
 
 
 @roles_bp.get("/")
@@ -26,10 +26,10 @@ def create_role_endp():
         return {"error": "ocurrio un error"}, 401
 
 
-@roles_bp.get("/<str:email>")
-def get_user_roles(email: str):
+@roles_bp.get("/<string:email>")
+def get_user_roles_endp(email: str):
     try:
-        getUsuario = obtenerUsuarioPorEmail(email)
+        getUsuario = get_user_by_email_srv(email=email, include_roles=True)
 
         if getUsuario:
             arrayRoles = []

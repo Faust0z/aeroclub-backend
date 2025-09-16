@@ -2,7 +2,7 @@ from flask import Blueprint, request
 
 from app.services.invoices import obtenerTodosLosRecibos, obtenerRecibo, crearRecibo
 
-invoices_bp = Blueprint("invoices", __name__)
+invoices_bp = Blueprint("invoices", __name__, url_prefix='/invoices')
 
 
 @invoices_bp.get("/")
@@ -20,7 +20,7 @@ def get_invoices_endp():
         return {"error": "ocurrio un error"}, 401
 
 
-@invoices_bp.get("/<str:email>")
+@invoices_bp.get("/<string:email>")
 def get_user_invoices_endp(email: str):
     try:
         respuesta = obtenerRecibo(email)

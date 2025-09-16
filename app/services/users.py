@@ -1,12 +1,13 @@
-from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy.orm import joinedload
-from sqlalchemy.exc import IntegrityError
 from datetime import date
 
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
+from werkzeug.security import generate_password_hash, check_password_hash
+
 from .roles import get_role_by_name_srv
-from ..models import Users, Roles
-from ..services.balances import create_balance_srv
+from ..errors import EmailAlreadyExists
 from ..extensions import db
+from ..models import Users, Roles, Balances
 
 
 def get_users_srv(email: str | None = None, first_name: str | None = None, last_name: str | None = None,
@@ -37,70 +38,47 @@ def get_user_by_email_srv(email: str = None, include_roles: bool = False) -> Use
     return db.session.scalar(stmt)
 
 
-def editarUsuario(email, data):
-    # solo trae el dicc y no la clase de la bd
-    user = obtenerUsuarioPorEmail(email)
-    # te trae un usuario de la bd
-    usuario = Users.query.get(user["id_usuarios"])
-
-    if not usuario:
-        return False
-
-    if 'nombre' in data:
-        usuario.first_name = data['nombre']
-    if 'apellido' in data:
-        usuario.last_name = data['apellido']
-    if 'email' in data:
-        usuario.email = data['email']
-    if 'telefono' in data:
-        usuario.phone_number = data['telefono']
-    if 'dni' in data:
-        usuario.dni = data['dni']
-    if 'fecha_alta' in data:
-        usuario.created_at = data['fecha_alta']
-    if 'fecha_baja' in data:
-        usuario.disabled_at = data['fecha_baja']
-    if 'direccion' in data:
-        usuario.address = data['direccion']
-    if 'foto_perfil' in data:
-        usuario.foto_perfil = data['foto_perfil']
-    if 'estado_hab_des' in data:
-        usuario.status = data['estado_hab_des']
-
-    # para que te lo guarde primero hay que buscar en la db una clase del modelo
-    # y despues cuando modifique un atributo de esa clase cuenta como que lo modifique
-    # y ahi el commit me lo toma como un cambio y lo guarda
-    db.session.commit()
-    return True
-
-
-def eliminarUsuario(email):
+def update_user_srv(email, data) -> Users:
     user = get_user_by_email_srv(email)
-
     if not user:
-        return False
+        return user
 
-    with db.session.begin():
-        user.status = False
-        return True
+    try:
+        for key, value in data.items():
+            if hasattr(user, key):
+                setattr(user, key, value)
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        raise EmailAlreadyExists
+    return user
 
 
-def register_user_srv(user: Users) -> tuple[bool, str]:
+def disable_user_srv(email) -> Users:
+    user = get_user_by_email_srv(email)
+    if not user:
+        return user
+
+    user.status = False
+    db.session.commit()
+    return user
+
+
+def register_user_srv(user: Users) -> Users:
     user.password = generate_password_hash(user.password)
     user.created_at = date.today()
     user.roles = get_role_by_name_srv("User")
     user.status = True
+    user.balance = Balances(balance=0, user_id=user.id)
 
     db.session.add(user)
-    db.session.flush()  # To make sure we can get the ID
-
-    create_balance_srv(balance=0, user_id=user.id)
     db.session.commit()
-    return True, "User created successfully"
+
+    return user
 
 
-def authenticate_user_srv(email: str, password: str) -> Users | None:
-    user = get_user_by_email_srv(email)
-    if not user or not check_password_hash(user.password, password):
-        return None
+def authenticate_user_srv(email: str, password: str) -> Users:
+    user = get_user_by_email_srv(email=email)
+    if not user or not check_password_hash(user.password, password=password):
+        return user
     return user

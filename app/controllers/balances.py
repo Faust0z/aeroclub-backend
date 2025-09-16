@@ -1,10 +1,10 @@
 from flask import Blueprint
 from app.services.balances import get_user_balance_srv
 
-balances_bp = Blueprint("balances", __name__)
+balances_bp = Blueprint("balances", __name__, url_prefix='/balances')
 
 
-@balances_bp.get("/<str:email>")
+@balances_bp.get("/<string:email>")
 def get_balance_endp(email: int):
     try:
         saldo = get_user_balance_srv(email)
