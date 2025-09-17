@@ -1,93 +1,43 @@
-from app.models.users import Users
 from app.models.roles import Roles
+from .users import get_user_by_email_srv
+from ..errors import UserNotFound, RoleNotFound
 from ..extensions import db
 
 
+def get_roles_srv() -> list[Roles]:
+    return db.session.scalars(db.select(Roles)).all()
+
+
 def get_role_by_name_srv(name: str) -> Roles:
-    return db.session.scalars(db.select(Roles).where(Roles.name == name)).all()
+    return db.session.scalar_one_or_none(db.select(Roles).where(Roles.name == name))
 
 
-def __chequearArrayRoles(roles, rol):
-    resultado = [x for x in roles if x.get("tipo") == rol]
-
-    if resultado:
-        return True
-    else:
-        return False
+def get_user_roles_srv(email: str) -> list[Roles]:
+    user = get_user_by_email_srv(email=email)
+    if not user:
+        raise UserNotFound
+    return user.roles
 
 
-def __chequearRolesPermitidos(rol):
-    rolesPermitidos = ["Asociado", "Gestor", "Instructor"]
+def add_user_role_srv(email: str, role: Roles) -> list[Roles]:
+    user = get_user_by_email_srv(email=email)
+    if not user:
+        raise UserNotFound
 
-    resultado = [x for x in rolesPermitidos if x == rol]
-    if resultado:
-        return True
-    else:
-        return False
-
-
-def editarRol(data):
-    # Obtenemos el userDictionary
-    userDictionary = obtenerUsuarioPorEmail(None, data.get("email"))
-
-    try:
-        if __chequearRolesPermitidos(data.get("rol")):
-            if __chequearArrayRoles(userDictionary.get("roles"), data.get("rol")):
-                return 2
-            else:
-                # nos traemos la data del rol que se paso por el endpoint
-                rol = data.get("rol")
-                rolDictionary = db.session.execute(
-                    db.select(Roles).filter_by(tipo=rol)
-                ).scalar_one()
-                # creo el usuarioTieneRoles
-
-                # TODO: this broke down when the associations where changed to Tables
-                # usuarioTieneRoles = UsersHaveRoles(
-                #    0, userDictionary.get("id_usuarios"), rolDictionary.id
-                # )
-                # db.session.add(usuarioTieneRoles)
-                db.session.commit()
-                return 3
-        else:
-            return 1
-
-    except Exception as ex:
-        print(ex)
-        return 4
+    if role not in user.roles:
+        user.roles.append(role)
+        db.session.commit()
+    return user.roles
 
 
-def eliminarRol(data):
-    # Obtenemos el userDictionary
-    userDictionary = obtenerUsuarioPorEmail(None, data.get("email"))
+def del_user_role_srv(email: str, role: Roles) -> list[Roles]:
+    user = get_user_by_email_srv(email=email)
+    if not user:
+        raise UserNotFound
 
-    try:
-        if __chequearRolesPermitidos(data.get("rol")):
-            if __chequearArrayRoles(
-                    userDictionary.get("roles"), data.get("rol")
-            ):
-                rolData = data.get("rol")
-                id_usuario = userDictionary.get("id_usuarios")
-                rolEncontrado = db.session.execute(
-                    db.select(Roles).filter_by(tipo=rolData)
-                ).scalar_one()
+    if not role in user.roles:
+        raise RoleNotFound
 
-                rol_id = rolEncontrado.id
-
-                # TODO: this broke down when the associations where changed to Tables
-                #                    usuarioTieneRoles = db.session.execute(
-                #                        db.select(UsersHaveRoles).filter_by(
-                #                            usuarios_id=id_usuario, roles_id=rol_id
-                #                       )
-                #                   ).scalar_one()
-                #
-                #                    db.session.delete(usuarioTieneRoles)
-                db.session.commit()
-                return 2
-            else:
-                return 3
-        else:
-            return 1
-    except Exception as ex:
-        print(ex)
-        return 4
+    user.roles.remove(role)
+    db.session.commit()
+    return user.roles

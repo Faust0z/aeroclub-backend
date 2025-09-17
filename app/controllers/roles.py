@@ -1,66 +1,102 @@
 from flask import Blueprint, request
+from flask_jwt_extended import jwt_required, get_jwt
 
-from app.services.roles import editarRol, eliminarRol
-from app.services.users import get_user_by_email_srv
+from app.errors import PermissionDeniedDisabledUser, PermissionDenied
+from app.schemas import RolesSchema
+from app.services.roles import get_roles_srv, get_user_roles_srv, add_user_role_srv, del_user_role_srv
+from ..extensions import db
 
 roles_bp = Blueprint("roles", __name__, url_prefix='/roles')
 
+"""
+Get Todos los roles
+Get Roles de un usuario
+Get Roles personales
+Agregar rol a usuario
+Remover rol a usuario
+"""
+
 
 @roles_bp.get("/")
-def create_role_endp():
-    try:
-        data = request.get_json()
-        respuesta = editarRol(data)
-        if respuesta == 1:
-            return {"error": "Ese rol no esta permitido"}, 400
-        if respuesta == 2:
-            return {"message": "Ya posee ese rol"}, 200
-        if respuesta == 3:
-            return {"message": "El rol se le asigno correctamente"}, 200
-        if respuesta == 4:
-            return {
-                "error": "El mail no es válido y no esta asociado a una cuenta"
-            }, 404
-    except Exception as ex:
-        print(ex)
-        return {"error": "ocurrio un error"}, 401
+@jwt_required()
+def get_roles_endp():
+    jwt_data = get_jwt()
+    if not jwt_data.get("status", True):
+        raise PermissionDeniedDisabledUser
+
+    caller_roles = jwt_data.get("roles", ["User"])
+    if not "Admin" in caller_roles:
+        raise PermissionDenied
+
+    roles = get_roles_srv()
+
+    schema = RolesSchema(many=True)
+    return {"data": schema.dump(roles)}, 200
+
+
+@roles_bp.get("/me")
+@jwt_required()
+def get_my_roles_endp():
+    jwt_data = get_jwt()
+    if not jwt_data.get("status", True):
+        raise PermissionDeniedDisabledUser
+
+    user_email = jwt_data["sub"]
+    roles = get_user_roles_srv(email=user_email)
+
+    schema = RolesSchema(many=True)
+    return {"data": schema.dump(roles)}, 200
 
 
 @roles_bp.get("/<string:email>")
+@jwt_required()
 def get_user_roles_endp(email: str):
-    try:
-        getUsuario = get_user_by_email_srv(email=email, include_roles=True)
+    jwt_data = get_jwt()
+    if not jwt_data.get("status", True):
+        raise PermissionDeniedDisabledUser
 
-        if getUsuario:
-            arrayRoles = []
-            rolesGetUsuario = getUsuario.get("roles")
-            for rol in rolesGetUsuario:
-                arrayRoles.append(rol.get("tipo"))
-            return {"roles": arrayRoles}, 200
-        else:
-            return {"error": "No se encontro un usuario con este email"}, 404
-    except Exception as ex:
-        print(ex)
-        return {"error": "ocurrio un error"}, 401
+    caller_roles = jwt_data.get("roles", ["User"])
+    if not "Admin" in caller_roles:
+        raise PermissionDenied
+
+    roles = get_user_roles_srv(email=email)
+
+    schema = RolesSchema(many=True)
+    return {"data": schema.dump(roles)}, 200
 
 
-@roles_bp.delete("/")
-def delete_role_endp():
-    try:
-        data = request.get_json()
-        respuesta = eliminarRol(data)
-        if respuesta == 1:
-            return {"error": "Ese rol no esta permitido"}, 400
-        if respuesta == 2:
-            return {"message": "Se elimino el rol correctamente"}, 200
-        if respuesta == 3:
-            return {
-                "error": "El rol que quiere eliminar no lo posee, asi que no se realiza acciones"
-            }, 400
-        if respuesta == 4:
-            return {
-                "error": "El mail no es válido y no esta asociado a una cuenta"
-            }, 404
-    except Exception as ex:
-        print(ex)
-        return {"error": "ocurrio un error"}, 401
+@roles_bp.post("/<string:email>")
+@jwt_required()
+def add_user_role_endp(email: str):
+    jwt_data = get_jwt()
+    if not jwt_data.get("status", True):
+        raise PermissionDeniedDisabledUser
+
+    caller_roles = jwt_data.get("roles", ["User"])
+    if not "Admin" in caller_roles:
+        raise PermissionDenied
+
+    data = request.get_json()
+    schema = RolesSchema(session=db.session, many=True)
+    roles = add_user_role_srv(email=email, role=data)
+    return {"msg": "Transaction created successfully", "data": schema.dump(roles)}, 201
+
+
+@roles_bp.delete("/<string:email>")
+@jwt_required()
+def delete_user_role_endp(email: str):
+    """
+    By business logic, the User role cannot be revoked
+    """
+    jwt_data = get_jwt()
+    if not jwt_data.get("status", True):
+        raise PermissionDeniedDisabledUser
+
+    caller_roles = jwt_data.get("roles", ["User"])
+    if not "Admin" in caller_roles:
+        raise PermissionDenied
+
+    data = request.get_json()
+    schema = RolesSchema(session=db.session, many=True)
+    roles = del_user_role_srv(email=email, role=data)
+    return {"msg": "Transaction created successfully", "data": schema.dump(roles)}, 201

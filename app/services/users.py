@@ -35,7 +35,7 @@ def get_user_by_email_srv(email: str = None, include_roles: bool = False) -> Use
     if include_roles:
         stmt = stmt.options(joinedload(Users.roles))
 
-    return db.session.scalar(stmt)
+    return db.session.scalar_one_or_none(stmt)
 
 
 def update_user_srv(email, data) -> Users:

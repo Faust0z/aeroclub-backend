@@ -25,6 +25,10 @@ class BalanceNotFound(NotFound):
     description = "Balance not found for this user"
 
 
+class PaymentTypeNotFound(NotFound):
+    description = "Payment type not found"
+
+
 class ResourceAlreadyExists(Conflict):
     description = "Resource already exists"
 
@@ -35,6 +39,10 @@ class EmailAlreadyExists(Conflict):
 
 class UserNotFound(NotFound):
     description = "No user found with the given email"
+
+
+class RoleNotFound(NotFound):
+    description = "The given user does not posses the requested role"
 
 
 def register_error_handlers(app: Flask) -> None:

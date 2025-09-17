@@ -73,7 +73,7 @@ def get_user_by_email_endp(email: str):
     elif "Instructor" in caller_roles:
         schema = UsersInstructorSchema(many=True)
     else:
-        schema = UsersSchema(many=True)
+        raise PermissionDenied
 
     user = get_user_by_email_srv(email=email)
     if not user:
