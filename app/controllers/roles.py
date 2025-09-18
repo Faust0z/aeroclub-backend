@@ -8,14 +8,6 @@ from ..extensions import db
 
 roles_bp = Blueprint("roles", __name__, url_prefix='/roles')
 
-"""
-Get Todos los roles
-Get Roles de un usuario
-Get Roles personales
-Agregar rol a usuario
-Remover rol a usuario
-"""
-
 
 @roles_bp.get("/")
 @jwt_required()
@@ -79,7 +71,7 @@ def add_user_role_endp(email: str):
     data = request.get_json()
     schema = RolesSchema(session=db.session, many=True)
     roles = add_user_role_srv(email=email, role=data)
-    return {"msg": "Transaction created successfully", "data": schema.dump(roles)}, 201
+    return {"data": schema.dump(roles)}, 201
 
 
 @roles_bp.delete("/<string:email>")
@@ -96,7 +88,7 @@ def delete_user_role_endp(email: str):
     if not "Admin" in caller_roles:
         raise PermissionDenied
 
-    data = request.get_json()
     schema = RolesSchema(session=db.session, many=True)
+    data = schema.load(request.get_json())
     roles = del_user_role_srv(email=email, role=data)
-    return {"msg": "Transaction created successfully", "data": schema.dump(roles)}, 201
+    return {"data": schema.dump(roles)}, 204

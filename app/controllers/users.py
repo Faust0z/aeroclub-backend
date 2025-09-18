@@ -2,9 +2,8 @@ from datetime import timedelta
 
 from flask import Blueprint, request
 from flask_jwt_extended import get_jwt, create_access_token, jwt_required
-from sqlalchemy.exc import IntegrityError
 
-from ..errors import EmailAlreadyExists, UserNotFound, AuthError, PermissionDenied, BadAuthRequest, PermissionDeniedDisabledUser
+from ..errors import UserNotFound, PermissionDenied, BadAuthRequest, PermissionDeniedDisabledUser
 from ..extensions import db
 from ..schemas import UsersRegisterSchema, UsersSchema, UsersAdminSchema, UsersInstructorSchema, UsersUpdateSchema
 from ..services.users import get_users_srv, register_user_srv, update_user_srv, disable_user_srv, authenticate_user_srv, \
@@ -77,7 +76,7 @@ def get_user_by_email_endp(email: str):
 
     user = get_user_by_email_srv(email=email)
     if not user:
-        raise UserNotFound()
+        raise UserNotFound
 
     return {"data": schema.dump(user)}, 200
 
@@ -91,14 +90,12 @@ def update_user_endp(email: str):
 
     caller_roles = jwt_data.get("roles", ["User"])
     if "Admin" in caller_roles:
-        schema = UsersAdminSchema(partial=True)
+        schema = UsersAdminSchema(session=db.session, partial=True)
     else:
-        schema = UsersUpdateSchema(partial=True)
+        schema = UsersUpdateSchema(session=db.session, partial=True)
 
     data = schema.load(request.get_json())
-    user = update_user_srv(email, data)
-    if not user:
-        raise UserNotFound()
+    user = update_user_srv(email=email, data=data)
 
     return {"data": schema.dump(user)}, 200
 
@@ -111,14 +108,13 @@ def delete_user_endp(email: str):
         raise PermissionDeniedDisabledUser
 
     caller_roles = jwt_data.get("roles", ["User"])
-    if "Admin" in caller_roles:
-        user = disable_user_srv(email=email)
-        if not user:
-            raise UserNotFound
-
-        return {"msg": "User disabled successfully"}, 200
-    else:
+    if not "Admin" in caller_roles:
         raise PermissionDenied
+
+    user = disable_user_srv(email=email)
+
+    schema = UsersAdminSchema()
+    return {"data": schema.dump(user)}, 204
 
 
 @users_bp.post("/register")
@@ -126,11 +122,8 @@ def register_user_endp():
     schema = UsersRegisterSchema(session=db.session)
     data = schema.load(request.get_json())
 
-    try:
-        user = register_user_srv(data)
-        return {"msg": "User created successfully", "data": schema.dump(user)}, 201
-    except IntegrityError:
-        raise EmailAlreadyExists()
+    user = register_user_srv(data)
+    return {"data": schema.dump(user)}, 201
 
 
 @users_bp.post("/login")
@@ -142,11 +135,9 @@ def login_endp():
         raise BadAuthRequest
 
     user = authenticate_user_srv(email, password)
-    if not user:
-        raise AuthError
 
     if not user.status:
-        raise
+        raise PermissionDeniedDisabledUser
 
     roles = [role.name for role in user.roles] if user.roles else ["User"]
     additional_claims = {

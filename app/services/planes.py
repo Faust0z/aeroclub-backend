@@ -1,83 +1,53 @@
-from app.models.planes import Planes
+from sqlalchemy.exc import IntegrityError
+
+from app.models import Planes, PlaneStatus
+from .plane_status import get_plane_status_by_name_srv
+from ..errors import PlaneRegistrationAlreadyExists, PlaneNotFound
 from ..extensions import db
 
 
-def obtenerAeronavePorMatricula(matricula):
+def get_planes_srv(brand: str | None = None, registration: str | None = None, category: str | None = None,
+                   status: str | None = None) -> list[Planes]:
+    stmt = db.select(Planes)
+
+    if brand:
+        stmt = stmt.where(Planes.brand.ilike(f"%{brand}%"))
+    if registration:
+        stmt = stmt.where(Planes.registration.ilike(f"%{registration}%"))
+    if category:
+        stmt = stmt.where(Planes.category.ilike(f"%{category}%"))
+    if status:
+        stmt = stmt.join(Planes.status).where(PlaneStatus.state.ilike(f"%{status}%"))
+
+    return db.session.execute(stmt).unique().scalars().all()
+
+
+def get_plane_by_registration_srv(registration: str) -> Planes:
+    return db.session.scalar_one_or_none(db.select(Planes).where(Planes.registration == registration))
+
+
+def create_plane_srv(plane: Planes) -> Planes:
+    plane.plane_status = get_plane_status_by_name_srv("Active")
+
     try:
-        aeronave = Planes.query.filter_by(matricula=matricula).first()
+        db.session.add(plane)
+        db.session.commit()
+    except IntegrityError:
+        raise PlaneRegistrationAlreadyExists
 
-        if aeronave:
-            estadoFound = obtenerEstadosAeronaveById(aeronave.estados_aeronaves_id)
-            aeronave_data = {
-                "marca": aeronave.marca,
-                "modelo": aeronave.modelo,
-                "matricula": aeronave.matricula,
-                "potencia": aeronave.potencia,
-                "clase": aeronave.clase,
-                "fecha_adquisicion": aeronave.fecha_adquisicion,
-                "consumo_por_hora": aeronave.consumo_por_hora,
-                "path_documentacion": aeronave.path_documentacion,
-                "descripcion": aeronave.descripcion,
-                "path_imagen_aeronave": aeronave.path_imagen_aeronave,
-                "estados": estadoFound.get("estado"),
-            }
-            return aeronave_data
-        else:
-            return False
-    except Exception as ex:
-        print(ex.args)
-        return False
+    return plane
 
 
-def obtenerAeronaves():
-    idDeshabilitado = obtenerIdEstadoDeshabilitada()
+def update_plane_srv(registration: str, data: Planes) -> Planes:
+    plane = get_plane_by_registration_srv(registration=registration)
+    if not plane:
+        raise PlaneNotFound
 
-    aeronaves = Planes.query.filter(Planes.estados_aeronaves_id != idDeshabilitado.get("id")).all()
-    aeronave_list = []
-
-    for aeronave in aeronaves:
-        aeronave_data = {
-            "id_aeronaves": aeronave.id_aeronaves,
-            "marca": aeronave.marca,
-            "modelo": aeronave.modelo,
-            "matricula": aeronave.matricula,
-            "potencia": aeronave.potencia,
-            "clase": aeronave.clase,
-            "fecha_adquisicion": aeronave.fecha_adquisicion,
-            "consumo_por_hora": aeronave.consumo_por_hora,
-            "path_documentacion": aeronave.path_documentacion,
-            "descripcion": aeronave.descripcion,
-            "path_imagen_aeronave": aeronave.path_imagen_aeronave,
-            "estados_aeronaves_id": aeronave.estados_aeronaves_id,
-        }
-        aeronave_list.append(aeronave_data)
-    return aeronave_list
-
-
-# al estar cargada no lo modificamos asi que no funciona como deberia en la db completa
-def crearAeronave(data):
-    aeronave = Planes(**data)
-    db.session.add(aeronave)
-    db.session.commit()
-    return True
-
-
-def editarAeronave(matricula, data):
-    aeronave = Planes.query.filter_by(matricula=matricula).first()
-    if aeronave:
+    try:
         for key, value in data.items():
-            setattr(aeronave, key, value)
+            if hasattr(plane, key):
+                setattr(plane, key, value)
         db.session.commit()
-        return True
-    return False
-
-
-def disable_plane(matricula):
-    aeronave = Planes.query.filter_by(matricula=matricula).first()
-    idDeshabilitado = obtenerIdEstadoDeshabilitada()
-
-    if aeronave:
-        aeronave.estados_aeronaves_id = idDeshabilitado.get("id")
-        db.session.commit()
-        return True
-    return False
+    except IntegrityError:
+        raise PlaneRegistrationAlreadyExists
+    return plane

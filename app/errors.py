@@ -29,6 +29,22 @@ class PaymentTypeNotFound(NotFound):
     description = "Payment type not found"
 
 
+class PlaneNotFound(NotFound):
+    description = "Plane not found"
+
+
+class PaymentTypeAlreadyExists(Conflict):
+    description = "Resource already exists"
+
+
+class PlaneStatusAlreadyExists(Conflict):
+    description = "Resource already exists"
+
+
+class PlaneRegistrationAlreadyExists(Conflict):
+    description = "Plane's registration already exists"
+
+
 class ResourceAlreadyExists(Conflict):
     description = "Resource already exists"
 
