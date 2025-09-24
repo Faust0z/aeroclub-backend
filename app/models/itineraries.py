@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from app.models import FlightSessions
 from .associations import itinerary_has_airport_codes
 from ..extensions import db
 
@@ -13,11 +14,11 @@ class Itineraries(db.Model):
     observations: db.Mapped[str] = db.Column(db.Text)
     itinerary_type_id: db.Mapped[int] = db.Column(db.ForeignKey('itinerary_types.id'))
     plane_id: db.Mapped[int] = db.Column(db.ForeignKey('planes.id'))
-    invoice_id: db.Mapped[int] = db.Column(db.ForeignKey('invoices.id'))
+    invoice_id: db.Mapped[int] = db.Column(db.ForeignKey('flight_sessions.id'))
 
     airport_codes: db.Mapped[list["AirportCodes"]] = db.relationship('AirportCodes', secondary=itinerary_has_airport_codes,
                                                                      back_populates="itineraries")
-    invoice: db.Mapped["Invoices"] = db.relationship(back_populates="itineraries")
+    flight_sessions: db.Mapped["FlightSessions"] = db.relationship(back_populates="itineraries")
     itineary_type: db.Mapped["ItineraryTypes"] = db.relationship(back_populates="itineraries")
     plane: db.Mapped["Planes"] = db.relationship(back_populates="itineraries")
 

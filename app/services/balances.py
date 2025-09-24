@@ -1,57 +1,24 @@
 from app.models.balances import Balances
-from .transactions import crearTransaccion
+from .users import get_user_by_email_srv
+from ..errors import BalanceNotFound
 from ..extensions import db
 
 
-def get_user_balance_srv(idAsociado):
-    try:
-        cuantaCorrienteAsociado = Balances.query.filter_by(usuarios_id=idAsociado).first()
-        if cuantaCorrienteAsociado:
-            return cuantaCorrienteAsociado.id
-        else:
-            return False
-    except Exception as ex:
-        print(ex)
-        return False
+def get_balances_srv(min_balance: float | None = None, max_balance: str | None = None) -> list[Balances]:
+    stmt = db.select(Balances)
+
+    if min_balance and max_balance:
+        stmt.where(db.and_(Balances.balance >= min_balance, Balances.balance <= max_balance))
+    elif min_balance:
+        stmt = stmt.where(Balances.balance >= min_balance)
+    elif max_balance:
+        stmt = stmt.where(Balances.balance <= max_balance)
+
+    return db.session.execute(stmt).unique().scalars().all()
 
 
-def update_balance_srv(usuario_id, monto, fecha, motivo, tipoPago):
-    cuenta_corriente = Balances.query.filter_by(
-        usuarios_id=usuario_id
-    ).first()
-
-    transaccion = crearTransaccion(
-        monto,
-        fecha,
-        motivo,
-        tipoPago,
-        cuenta_corriente.id,
-    )
-    print(f"transaccion: {transaccion}")
-    if (cuenta_corriente) and (transaccion):
-        print(f"transaccion: {transaccion.amount}")
-        cuenta_corriente.balance = (cuenta_corriente.balance + transaccion.amount)
-        db.session.commit()
-        return transaccion
-    return False
-
-
-# TODO: check if this is a necessary method, or if it's possible to manage with SQLA sessions
-def rollback_payment_srv(monto, id):
-    cuenta_corriente = (
-        db.session.query(Balances).filter_by(usuarios_id=id).first()
-    )
-    monto = monto * (-1)
-    print(f"monto: {monto}")
-    print(f"cuenta corriente: {cuenta_corriente.balance}")
-    if cuenta_corriente:
-        cuenta_corriente.balance = cuenta_corriente.balance + monto
-        print(f"nuevo saldo: {cuenta_corriente.balance}")
-        db.session.commit()
-        return True
-    return False
-
-
-# A balance can't be deleted, only disabled
-def disable_account_srv():
-    pass
+def get_user_balance_by_email_srv(email: str) -> Balances:
+    user = get_user_by_email_srv(email=email)
+    if not user.balance:
+        raise BalanceNotFound
+    return user.balance

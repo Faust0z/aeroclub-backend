@@ -1,6 +1,7 @@
 from datetime import date
 
-from .associations import users_have_roles, users_have_invoices
+from app.models import FlightSessions
+from .associations import users_have_roles, users_have_flight_sessions
 from ..extensions import db
 
 
@@ -19,7 +20,9 @@ class Users(db.Model):
 
     balance: db.Mapped["Balances"] = db.relationship(back_populates="users")
     roles: db.Mapped[list["Roles"]] = db.relationship("Roles", secondary=users_have_roles, back_populates="users")
-    invoices: db.Mapped[list["Invoices"]] = db.relationship("Invoices", secondary=users_have_invoices, back_populates="users")
+    flight_sessions: db.Mapped[list["FlightSessions"]] = db.relationship("FlightSessions",
+                                                                         secondary=users_have_flight_sessions,
+                                                                         back_populates="users")
 
     def __repr__(self):
         return f"<first_name={self.first_name} email={self.email}>"

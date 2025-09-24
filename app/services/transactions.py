@@ -1,80 +1,78 @@
-from app.models.transactions import Transactions
-from app.models.payment_types import PaymentTypes
-from app.models.balances import Balances
-from app.models.users import Users
-from app.models.payment_types import PaymentTypes
+from datetime import date
+
+from .balances import get_user_balance_by_email_srv
+from .payment_types import get_payment_type_by_name_srv
+from .users import get_user_by_email_srv
 from ..extensions import db
+from ..models import Balances, PaymentTypes, Transactions, Users
 
 
-def __chequearTipoPago(tipoPago):
-    tipos = ["Cheque", "Efectivo", "Transferencia"]
-    print(f"__chequearTipoPago tipoPago entro: {tipoPago}")
-    resultado = [x for x in tipos if x == tipoPago]
+def get_transactions_srv(email: str | None = None, first_name: str | None = None, last_name: str | None = None,
+                         payment_type: str | None = None, starting_date: date | None = None, limit_date: date | None = None) -> \
+        list[Transactions]:
+    stmt = db.select(Transactions)
 
-    if resultado:
-        return True
-    else:
-        return False
+    if email or first_name or last_name:
+        stmt = stmt.join(Transactions.balance).join(Balances.user)
+        if email:
+            stmt = stmt.where(Users.email.ilike(f"%{email}%"))
+        if first_name:
+            stmt = stmt.where(Users.first_name.ilike(f"%{first_name}%"))
+        if last_name:
+            stmt = stmt.where(Users.last_name.ilike(f"%{last_name}%"))
+    if payment_type:
+        stmt = stmt.join(Transactions.payment_type).where(PaymentTypes.type == payment_type)
+    if starting_date and limit_date:
+        stmt = stmt.where(db.and_(Transactions.issued_date >= starting_date, Transactions.issued_date <= limit_date))
+    elif starting_date:
+        stmt = stmt.where(Transactions.issued_date >= starting_date)
+    elif limit_date:
+        stmt = stmt.where(Transactions.issued_date <= limit_date)
 
-def crearTransaccion(monto, fecha, motivo, tipoPago, idCuentaCorriente):
-    try:
-        # chequeando el tipo de pago
-        if __chequearTipoPago(tipoPago):
-            # aca me traigo el tipoPago para obtener su id
-            tipoPagoDictionary = db.session.query(PaymentTypes).filter_by(tipo=tipoPago).first()
+    return db.session.execute(stmt).unique().scalars().all()
 
-            transaccion = Transactions(None, monto, fecha, motivo, tipoPagoDictionary.id, idCuentaCorriente)
 
-            db.session.add(transaccion)
-            db.session.commit()
+def get_user_trans_by_email_srv(email: str) -> list[Transactions]:
+    user = get_user_by_email_srv(email=email)
+    return user.balance.transactions
 
-            return transaccion
 
-        else:
-            return False
-    except Exception as ex:
-        print(ex)
-        return False
+def sum_user_transaction_srv(email: str, transaction: Transactions) -> Transactions:
+    """
+    These kind of transactions are only to add money to the user's balance
+    :param email: user's email
+    :param transaction: the transaction to sum
+    :return: the transaction with the payment type and user's balance attached
+    """
+    payment_type = get_payment_type_by_name_srv(name=transaction.payment_type)
+    transaction.payment_type = payment_type
 
-def obtenerTransacciones():
-    try:
-        transacciones = Transactions.query.all()
-        transaccion_list = []
+    balance = get_user_balance_by_email_srv(email=email)
+    transaction.balance = balance
+    balance.balance += transaction.amount
 
-        for transaccion in transacciones:
-            idCuentaCorriente = transaccion.balance_id
-            cuentaCorriente = db.session.query(Balances).filter_by(id_cuenta_corriente=idCuentaCorriente).first()
-            usuario = db.session.query(Users).filter_by(id_usuarios=cuentaCorriente.user_id).first()
-            tipoPago = db.session.query(PaymentTypes).filter_by(id_tipo_pago=transaccion.fare_type_id).first()
-            transaccion_data = {
-                'id_transacciones': transaccion.id_transacciones,
-                'nombre_completo_usuario': usuario.first_name + " " + usuario.last_name,
-                'monto': transaccion.amount,
-                'fecha': transaccion.issued_date,
-                'motivo': transaccion.description,
-                'tipo_pago_id': tipoPago.name,
-                'cuenta_corriente_id': transaccion.balance_id,
-            }
-            transaccion_list.append(transaccion_data)
-        return transaccion_list
+    db.session.add(transaction)
+    db.session.commit()
 
-    except Exception as ex:
-        print(ex)
-        return False
+    return transaction
 
-# Obtener todas las transacciones de un usuario según su id
-def obtener_transaccion(cuenta_corriente_id):
-    transaccion_uid = Transactions.query.filter_by(cuenta_corriente_id=cuenta_corriente_id)
-    transaccion_uid_list = []
 
-    for transaccion in transaccion_uid:
-        transaccion_data = {
-            'id_transacciones': transaccion.id_transacciones,
-            'monto': transaccion.amount,
-            'fecha': transaccion.issued_date,
-            'motivo': transaccion.description,
-            'tipo_pago_id': transaccion.fare_type_id,
-            'cuenta_corriente_id': transaccion.balance_id,
-        }
-        transaccion_uid_list.append(transaccion_data)
-    return transaccion_uid_list
+def sub_user_transaction_srv(email: str, transaction: Transactions) -> Transactions:
+    """
+    These kind of transactions are only to subtract to the user's balance. Called by new flight sessions being created and
+    *flushes* instead of commiting to avoid session issues
+    :param email: user's email
+    :param transaction: the user's transaction
+    :return: the transaction with the payment type and user's balance attached
+    """
+    payment_type = get_payment_type_by_name_srv(name=transaction.payment_type)
+    transaction.payment_type = payment_type
+
+    balance = get_user_balance_by_email_srv(email=email)
+    transaction.balance = balance
+    balance.balance -= transaction.amount
+
+    db.session.add(transaction)
+    db.session.flush()
+
+    return transaction

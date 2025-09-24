@@ -63,6 +63,30 @@ class ItinerariesSchema(SQLAlchemyAutoSchema):
     airport_codes = fields.Nested(AirportCodesSchema, many=True)
 
 
+class FlightSessionsSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = FlightSessions
+        load_instance = True
+        include_fk = False
+        exclude = ("id",)
+
+    issued_date = auto_field(dump_only=True)
+    observations = auto_field(required=False, allow_none=True)
+    flight_session_identifier = auto_field(dump_only=True)
+    itineraries = fields.Nested(ItinerariesSchema, many=True)
+
+
+class FlightSessionsAdminSchema(FlightSessionsSchema):
+    @post_dump(pass_original=True)
+    def group_users_by_role(self, data, flight_sessions):
+        users = flight_sessions.users
+        for user in users:
+            for role in user.roles:
+                key = role.name
+                data[key] = UsersSchema().dump(user)
+        return data
+
+
 # Includes itineraries and excludes airport_codes to avoid circular nesting
 class AirportCodesWithItinerariesSchema(AirportCodesSchema):
     itineraries = fields.Nested(ItinerariesSchema, many=True, exclude=("airport_codes",))
@@ -156,7 +180,7 @@ class UsersRegisterSchema(SQLAlchemyAutoSchema):
         model = Users
         load_instance = True
         include_fk = False
-        exclude = ("id", "created_at", "disabled_at", "status", "roles", "invoices",)
+        exclude = ("id", "created_at", "disabled_at", "status", "roles", "flight_sessions",)
 
     first_name = auto_field(required=True)
     last_name = auto_field(required=True)
@@ -171,7 +195,7 @@ class UsersSchema(SQLAlchemyAutoSchema):
         model = Users
         load_instance = True
         include_fk = False
-        exclude = ("id", "invoices", "disabled_at", "status", "password",)
+        exclude = ("id", "flight_sessions", "disabled_at", "status", "password",)
 
     first_name = auto_field(required=True)
     last_name = auto_field(required=True)
@@ -187,7 +211,7 @@ class UsersUpdateSchema(SQLAlchemyAutoSchema):
         model = Users
         load_instance = True
         include_fk = False
-        exclude = ("id", "invoices", "disabled_at", "status", "password",)
+        exclude = ("id", "flight_sessions", "disabled_at", "status", "password",)
 
     first_name = auto_field(required=False)
     last_name = auto_field(required=False)
@@ -200,7 +224,7 @@ class UsersInstructorSchema(SQLAlchemyAutoSchema):
         model = Users
         load_instance = True
         include_fk = False
-        exclude = ("id", "invoices", "address", "created_at", "disabled_at", "password",)
+        exclude = ("id", "flight_sessions", "address", "created_at", "disabled_at", "password",)
 
     first_name = auto_field(required=True, dump_only=True)
     last_name = auto_field(required=True, dump_only=True)
@@ -215,7 +239,7 @@ class UsersAdminSchema(SQLAlchemyAutoSchema):
         model = Users
         load_instance = True
         include_fk = False
-        exclude = ("invoices", "password",)
+        exclude = ("flight_sessions", "password",)
 
     first_name = auto_field(required=False)
     last_name = auto_field(required=False)

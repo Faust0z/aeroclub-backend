@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.models import FlightSessions
 from ..extensions import db
 
 
@@ -13,7 +14,7 @@ class Transactions(db.Model):
     balance_id = db.Column(db.ForeignKey('balances.id'))
 
     balance: db.Mapped["Balances"] = db.relationship(back_populates="transactions")
-    invoice: db.Mapped["Invoices"] = db.relationship(back_populates="transactions")
+    flight_sessions: db.Mapped["FlightSessions"] = db.relationship(back_populates="transactions")
     payment_type: db.Mapped["PaymentTypes"] = db.relationship(back_populates="transactions")
 
     def __repr__(self):

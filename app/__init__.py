@@ -36,6 +36,7 @@ def create_app():
 
     app.register_blueprint(airport_codes_bp)
     app.register_blueprint(balances_bp)
+    app.register_blueprint(flight_sessions_bp)
     app.register_blueprint(payment_types_bp)
     app.register_blueprint(plane_status_bp)
     app.register_blueprint(planes_bp)

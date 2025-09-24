@@ -12,8 +12,8 @@ users_have_roles = db.Table(
     db.Column("roles_id", db.ForeignKey("roles.id"), primary_key=True),
 )
 
-users_have_invoices = db.Table(
-    "users_have_invoices",
+users_have_flight_sessions = db.Table(
+    "users_have_flight_sessions",
     db.Column("users_id", db.ForeignKey("users.id"), primary_key=True),
-    db.Column("invoices_id", db.ForeignKey("invoices.id"), primary_key=True),
+    db.Column("flight_sessions", db.ForeignKey("flight_sessions.id"), primary_key=True),
 )

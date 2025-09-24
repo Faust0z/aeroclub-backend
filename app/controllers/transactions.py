@@ -1,66 +1,78 @@
 from flask import Blueprint, request
-from app.models.balances import Balances
-from app.services.balances import get_user_balance_srv
-from app.services.transactions import obtenerTransacciones, obtener_transaccion
+from flask_jwt_extended import jwt_required, get_jwt
 
-transactions_bp = Blueprint("transactions", __name__)
+from ..errors import PermissionDenied, PermissionDeniedDisabledUser
+from ..extensions import db
+from ..schemas import TransactionsSchema
+from ..services.transactions import get_transactions_srv, get_user_trans_by_email_srv, sum_user_transaction_srv
+
+transactions_bp = Blueprint("transactions", __name__, url_prefix='/v1/transactions')
 
 
 @transactions_bp.get("/")
-def get_transactions():
-    try:
-        transacciones = obtenerTransacciones()
-        if transacciones:
-            return {"response": transacciones}, 200
-        else:
-            return {"error": "ERROR"}, 404
+@jwt_required()
+def get_transactions_endp():
+    jwt_data = get_jwt()
+    caller_roles = jwt_data.get("roles", ["User"])
+    if not "Admin" in caller_roles:
+        raise PermissionDenied
 
-    except Exception as ex:
-        print(ex)
-        return {"error": "ERROR"}, 401
+    email = request.args.get("email")
+    first_name = request.args.get("first_name")
+    last_name = request.args.get("last_name")
+    payment_type = request.args.get("payment_type")
+    starting_date = request.args.get("starting_date")
+    limit_date = request.args.get("limit_date")
+    transactions = get_transactions_srv(
+        email=email,
+        first_name=first_name,
+        last_name=last_name,
+        payment_type=payment_type,
+        starting_date=starting_date,
+        limit_date=limit_date
+    )
+
+    schema = TransactionsSchema(many=True)
+    return {"data": schema.dump(transactions)}, 200
 
 
-@transactions_bp.get("/user/<str:email>")
+@transactions_bp.get("/me")
+@jwt_required()
+def get_my_transactions_endp():
+    jwt_data = get_jwt()
+    if not jwt_data.get("status", True):
+        raise PermissionDeniedDisabledUser
+
+    user_email = jwt_data["sub"]
+    transactions = get_user_trans_by_email_srv(email=user_email)
+
+    schema = TransactionsSchema(many=True)
+    return {"data": schema.dump(transactions)}, 200
+
+
+@transactions_bp.get("/<string:email>")
+@jwt_required()
 def get_user_transactions_endp(email: str):
-    try:
-        # buscar la cuenta corriente asociada a ese usuario
-        cuenta_corriente = get_user_balance_srv(email)
+    jwt_data = get_jwt()
+    caller_roles = jwt_data.get("roles", ["User"])
+    if not "Admin" in caller_roles:
+        raise PermissionDenied
 
-        if cuenta_corriente:
-            # Usar el ID de la cuenta corriente para obtener las transacciones
-            transacciones = obtener_transaccion(cuenta_corriente.id)
+    transactions = get_user_trans_by_email_srv(email=email)
 
-            if transacciones:
-                return {"response": transacciones}, 200
-            else:
-                return {"error": "No se encontraron transacciones para este usuario"}, 404
-        else:
-            return {"error": "No se encontró la cuenta corriente para este usuario"}, 404
-    except Exception as ex:
-        print(ex)
-        return {"error": "ERROR"}, 401
+    schema = TransactionsSchema(many=True)
+    return {"data": schema.dump(transactions)}, 200
 
 
-@transactions_bp.post("/")
-def create_transaction_endp():
-    try:
-        data = request.get_json()
-        monto = data.get("monto")
-        idUsuario = data.get("idUsuario")
-        motivo = data.get("motivo")
-        tipoPago = data.get("tipoPago")
-        fecha = data.get("fecha")
-        idCuenta = get_user_balance_srv(idUsuario)
+@transactions_bp.post("/<string:email>")
+@jwt_required()
+def create_user_transaction_endp(email: str):
+    jwt_data = get_jwt()
+    caller_roles = jwt_data.get("roles", ["User"])
+    if not "Admin" in caller_roles:
+        raise PermissionDenied
 
-        if idCuenta:
-            respuesta = update_balance_srv(idUsuario, monto, fecha, motivo, tipoPago)
-            ## respuesta = transaccion_controller.crearTransaccion(monto, fecha, motivo,tipoPago,idCuentaCorriente)
-            if respuesta:
-                return {"message": "Transaccion created successfully"}, 201
-            else:
-                return {"error": "Some data is invalid"}, 400
-        else:
-            return {"error": "El usuario no posee una cuenta"}, 404
-    except Exception as ex:
-        print(ex)
-        return {"error": "An error occurred"}, 401
+    data = request.get_json()
+    schema = TransactionsSchema(session=db.session)
+    transaction = sum_user_transaction_srv(email=email, transaction=data)
+    return {"msg": "Transaction created successfully", "data": schema.dump(transaction)}, 201
