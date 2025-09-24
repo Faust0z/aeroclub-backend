@@ -23,7 +23,10 @@ def get_planes_srv(brand: str | None = None, registration: str | None = None, ca
 
 
 def get_plane_by_registration_srv(registration: str) -> Planes:
-    return db.session.scalar_one_or_none(db.select(Planes).where(Planes.registration == registration))
+    plane = db.session.scalar_one_or_none(db.select(Planes).where(Planes.registration == registration))
+    if not plane:
+        raise PlaneNotFound
+    return plane
 
 
 def create_plane_srv(plane: Planes) -> Planes:
@@ -40,8 +43,6 @@ def create_plane_srv(plane: Planes) -> Planes:
 
 def update_plane_srv(registration: str, data: Planes) -> Planes:
     plane = get_plane_by_registration_srv(registration=registration)
-    if not plane:
-        raise PlaneNotFound
 
     try:
         for key, value in data.items():

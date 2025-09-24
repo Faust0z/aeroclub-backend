@@ -6,7 +6,7 @@ from ..extensions import db
 from ..schemas import PaymentTypesSchema
 from ..services.payment_types import get_payment_types_srv, update_payment_type_srv
 
-payment_types_bp = Blueprint("payment_types", __name__, url_prefix="/payment_types")
+payment_types_bp = Blueprint("payment_types", __name__, url_prefix="/v1/payment_types")
 
 
 @payment_types_bp.get("/")
@@ -26,9 +26,6 @@ def get_payment_types_endp():
 @jwt_required()
 def update_payment_type_endp(name: str):
     jwt_data = get_jwt()
-    if not jwt_data.get("status", True):
-        raise PermissionDeniedDisabledUser
-
     caller_roles = jwt_data.get("roles", ["User"])
     if not "Admin" in caller_roles:
         raise PermissionDenied

@@ -1,7 +1,8 @@
-from marshmallow import fields, validate
+from marshmallow import fields, validate, post_dump
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema, auto_field
 
-from .models import Users, Roles, Transactions, Planes, PlaneStatus, PaymentTypes, ItineraryTypes, Itineraries, Invoices, Fares, \
+from .models import Users, Roles, Transactions, Planes, PlaneStatus, PaymentTypes, ItineraryTypes, Itineraries, \
+    FlightSessions, Fares, \
     Balances, AirportCodes
 
 
@@ -38,26 +39,14 @@ class FaresSchema(SQLAlchemyAutoSchema):
         exclude = ("id",)
 
     issued_date = auto_field(required=True, dump_only=True)
-    instruction_cost = auto_field(required=True, dump_only=True)
+    fare_value = auto_field(required=True, dump_only=True)
 
 
 class FaresAdminSchema(FaresSchema):
     exclude = ()
     id = auto_field(dump_only=True)
     issued_date = auto_field(required=False)
-    instruction_cost = auto_field(required=False)
-
-
-class InvoicesSchema(SQLAlchemyAutoSchema):
-    class Meta:
-        model = Invoices
-        load_instance = True
-        include_fk = False
-        exclude = ("id",)
-
-    issued_date = auto_field(required=True, dump_only=True)
-    observations = auto_field(required=False, allow_none=True)
-    invoice_identifier = auto_field(required=True, dump_only=True)
+    fare_value = auto_field(required=False)
 
 
 class ItinerariesSchema(SQLAlchemyAutoSchema):
@@ -68,7 +57,7 @@ class ItinerariesSchema(SQLAlchemyAutoSchema):
         exclude = ("id",)
 
     departure_time = auto_field(required=True)
-    landing_time = auto_field(required=True)
+    arrival_time = auto_field(required=True)
     landings_amount = auto_field(required=True)
     observations = auto_field(required=False, allow_none=True)
     airport_codes = fields.Nested(AirportCodesSchema, many=True)

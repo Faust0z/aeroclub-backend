@@ -9,6 +9,10 @@ class BadAuthRequest(BadRequest):
     description = "Email and password are required"
 
 
+class BadTimeInput(BadRequest):
+    description = "Arrival time is earlier than departure time"
+
+
 class AuthError(Unauthorized):
     description = "Authentication credentials were not provided or are invalid"
 
@@ -25,6 +29,10 @@ class BalanceNotFound(NotFound):
     description = "Balance not found for this user"
 
 
+class FlightSessionNotFound(NotFound):
+    description = "Flight session not found"
+
+
 class PaymentTypeNotFound(NotFound):
     description = "Payment type not found"
 
@@ -33,12 +41,28 @@ class PlaneNotFound(NotFound):
     description = "Plane not found"
 
 
+class PlaneStatusNotFound(NotFound):
+    description = "Plane status not found"
+
+
 class PaymentTypeAlreadyExists(Conflict):
-    description = "Resource already exists"
+    description = "Payment type already exists"
+
+
+class AirportCodeAlreadyExists(Conflict):
+    description = "Airport code already exists"
+
+
+class AirportCodeNotFound(NotFound):
+    description = "Plane status not found"
+
+
+class PlaneFareNotFound(NotFound):
+    description = "Plane fare not found"
 
 
 class PlaneStatusAlreadyExists(Conflict):
-    description = "Resource already exists"
+    description = "Plane Status already exists"
 
 
 class PlaneRegistrationAlreadyExists(Conflict):

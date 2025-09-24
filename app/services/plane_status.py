@@ -1,7 +1,7 @@
 from sqlalchemy.exc import IntegrityError
 
 from app.models.plane_status import PlaneStatus
-from ..errors import PlaneStatusAlreadyExists
+from ..errors import PlaneStatusAlreadyExists, PlaneStatusNotFound
 from ..extensions import db
 
 
@@ -10,7 +10,10 @@ def get_planes_status_srv() -> list[PlaneStatus]:
 
 
 def get_plane_status_by_name_srv(name: str) -> PlaneStatus:
-    return db.session.scalar_one_or_none(db.select(PlaneStatus).where(PlaneStatus.state == name))
+    plane_status = db.session.scalar_one_or_none(db.select(PlaneStatus).where(PlaneStatus.state == name))
+    if not plane_status:
+        raise PlaneStatusNotFound
+    return plane_status
 
 
 def update_plane_status_srv(name: str, data: PlaneStatus) -> PlaneStatus:

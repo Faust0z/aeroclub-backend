@@ -3,13 +3,13 @@ from datetime import timedelta
 from flask import Blueprint, request
 from flask_jwt_extended import get_jwt, create_access_token, jwt_required
 
-from ..errors import UserNotFound, PermissionDenied, BadAuthRequest, PermissionDeniedDisabledUser
+from ..errors import PermissionDenied, BadAuthRequest, PermissionDeniedDisabledUser
 from ..extensions import db
 from ..schemas import UsersRegisterSchema, UsersSchema, UsersAdminSchema, UsersInstructorSchema, UsersUpdateSchema
 from ..services.users import get_users_srv, register_user_srv, update_user_srv, disable_user_srv, authenticate_user_srv, \
     get_user_by_email_srv
 
-users_bp = Blueprint("users", __name__, url_prefix='/users')
+users_bp = Blueprint("users", __name__, url_prefix='/v1/users')
 
 
 @users_bp.get("/")
@@ -52,8 +52,6 @@ def get_my_info_endp():
     user_email = jwt_data["sub"]
 
     user = get_user_by_email_srv(user_email)
-    if not user:
-        raise UserNotFound
 
     schema = UsersSchema()
     return {"data": schema.dump(user)}, 200
@@ -75,8 +73,6 @@ def get_user_by_email_endp(email: str):
         raise PermissionDenied
 
     user = get_user_by_email_srv(email=email)
-    if not user:
-        raise UserNotFound
 
     return {"data": schema.dump(user)}, 200
 
@@ -104,9 +100,6 @@ def update_user_endp(email: str):
 @jwt_required()
 def delete_user_endp(email: str):
     jwt_data = get_jwt()
-    if not jwt_data.get("status", True):
-        raise PermissionDeniedDisabledUser
-
     caller_roles = jwt_data.get("roles", ["User"])
     if not "Admin" in caller_roles:
         raise PermissionDenied
@@ -122,7 +115,7 @@ def register_user_endp():
     schema = UsersRegisterSchema(session=db.session)
     data = schema.load(request.get_json())
 
-    user = register_user_srv(data)
+    user = register_user_srv(user=data)
     return {"data": schema.dump(user)}, 201
 
 

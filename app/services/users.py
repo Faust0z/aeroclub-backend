@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from .roles import get_role_by_name_srv
-from ..errors import EmailAlreadyExists, UserNotFound
+from ..errors import EmailAlreadyExists, UserNotFound, AuthError
 from ..extensions import db
 from ..models import Users, Roles, Balances
 
@@ -15,7 +15,7 @@ def get_users_srv(email: str | None = None, first_name: str | None = None, last_
     stmt = db.select(Users).options(joinedload(Users.roles))
 
     if email:
-        stmt = stmt.where(Users.email.ilike(email))
+        stmt = stmt.where(Users.email.ilike(f"%{email}%"))
     if first_name:
         stmt = stmt.where(Users.first_name.ilike(f"%{first_name}%"))
     if last_name:
@@ -33,13 +33,14 @@ def get_user_by_email_srv(email: str = None, include_roles: bool = False) -> Use
     if include_roles:
         stmt = stmt.options(joinedload(Users.roles))
 
-    return db.session.scalar_one_or_none(stmt)
+    user = db.session.scalar_one_or_none(stmt)
+    if not user:
+        raise UserNotFound
+    return user
 
 
 def update_user_srv(email: str, data: Users) -> Users:
     user = get_user_by_email_srv(email)
-    if not user:
-        raise UserNotFound
 
     try:
         for key, value in data.items():
@@ -54,8 +55,6 @@ def update_user_srv(email: str, data: Users) -> Users:
 
 def disable_user_srv(email) -> Users:
     user = get_user_by_email_srv(email)
-    if not user:
-        raise UserNotFound
 
     user.status = False
     db.session.commit()
@@ -80,6 +79,6 @@ def register_user_srv(user: Users) -> Users:
 
 def authenticate_user_srv(email: str, password: str) -> Users:
     user = get_user_by_email_srv(email=email)
-    if not user or not check_password_hash(user.password, password=password):
-        raise UserNotFound
+    if not check_password_hash(user.password, password=password):
+        raise AuthError
     return user

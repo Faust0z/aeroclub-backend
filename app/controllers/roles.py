@@ -6,16 +6,13 @@ from app.schemas import RolesSchema
 from app.services.roles import get_roles_srv, get_user_roles_srv, add_user_role_srv, del_user_role_srv
 from ..extensions import db
 
-roles_bp = Blueprint("roles", __name__, url_prefix='/roles')
+roles_bp = Blueprint("roles", __name__, url_prefix='/v1/roles')
 
 
 @roles_bp.get("/")
 @jwt_required()
 def get_roles_endp():
     jwt_data = get_jwt()
-    if not jwt_data.get("status", True):
-        raise PermissionDeniedDisabledUser
-
     caller_roles = jwt_data.get("roles", ["User"])
     if not "Admin" in caller_roles:
         raise PermissionDenied
@@ -44,9 +41,6 @@ def get_my_roles_endp():
 @jwt_required()
 def get_user_roles_endp(email: str):
     jwt_data = get_jwt()
-    if not jwt_data.get("status", True):
-        raise PermissionDeniedDisabledUser
-
     caller_roles = jwt_data.get("roles", ["User"])
     if not "Admin" in caller_roles:
         raise PermissionDenied
@@ -61,9 +55,6 @@ def get_user_roles_endp(email: str):
 @jwt_required()
 def add_user_role_endp(email: str):
     jwt_data = get_jwt()
-    if not jwt_data.get("status", True):
-        raise PermissionDeniedDisabledUser
-
     caller_roles = jwt_data.get("roles", ["User"])
     if not "Admin" in caller_roles:
         raise PermissionDenied
@@ -81,9 +72,6 @@ def delete_user_role_endp(email: str):
     By business logic, the User role cannot be revoked
     """
     jwt_data = get_jwt()
-    if not jwt_data.get("status", True):
-        raise PermissionDeniedDisabledUser
-
     caller_roles = jwt_data.get("roles", ["User"])
     if not "Admin" in caller_roles:
         raise PermissionDenied

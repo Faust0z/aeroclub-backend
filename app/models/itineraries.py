@@ -8,7 +8,7 @@ class Itineraries(db.Model):
     __tablename__ = 'itineraries'
     id: db.Mapped[int] = db.Column(db.Integer, primary_key=True, autoincrement=True)
     departure_time: db.Mapped[datetime] = db.Column(db.DateTime, nullable=False)
-    landing_time: db.Mapped[datetime] = db.Column(db.DateTime, nullable=False)
+    arrival_time: db.Mapped[datetime] = db.Column(db.DateTime, nullable=False)
     landings_amount: db.Mapped[int] = db.Column(db.Integer, nullable=False)
     observations: db.Mapped[str] = db.Column(db.Text)
     itinerary_type_id: db.Mapped[int] = db.Column(db.ForeignKey('itinerary_types.id'))
@@ -22,4 +22,4 @@ class Itineraries(db.Model):
     plane: db.Mapped["Planes"] = db.relationship(back_populates="itineraries")
 
     def __repr__(self):
-        return f"<departure_time={self.departure_time} landing_time={self.landing_time} landing_number={self.landings_amount}>"
+        return f"<departure_time={self.departure_time} arrival_time={self.arrival_time} landing_number={self.landings_amount}>"

@@ -1,6 +1,6 @@
 from sqlalchemy.exc import IntegrityError
 
-from ..errors import PaymentTypeAlreadyExists
+from ..errors import PaymentTypeAlreadyExists, PaymentTypeNotFound
 from ..extensions import db
 from ..models import PaymentTypes
 
@@ -10,7 +10,10 @@ def get_payment_types_srv() -> list[PaymentTypes]:
 
 
 def get_payment_type_by_name_srv(name: str) -> PaymentTypes:
-    return db.session.scalar_one_or_none(db.select(PaymentTypes).where(PaymentTypes.type == name))
+    payment_type = db.session.scalar_one_or_none(db.select(PaymentTypes).where(PaymentTypes.type == name))
+    if not payment_type:
+        raise PaymentTypeNotFound
+    return payment_type
 
 
 def update_payment_type_srv(name: str, data: PaymentTypes) -> PaymentTypes:

@@ -6,7 +6,7 @@ from ..extensions import db
 from ..schemas import PlaneStatusSchema
 from ..services.plane_status import get_planes_status_srv, update_plane_status_srv
 
-plane_status_bp = Blueprint("plane_status", __name__, url_prefix="/plane_status")
+plane_status_bp = Blueprint("plane_status", __name__, url_prefix="/v1/plane_status")
 
 
 @plane_status_bp.get("/")
@@ -26,9 +26,6 @@ def get_plane_status_endp():
 @jwt_required()
 def update_plane_status_endp(name: str):
     jwt_data = get_jwt()
-    if not jwt_data.get("status", True):
-        raise PermissionDeniedDisabledUser
-
     caller_roles = jwt_data.get("roles", ["User"])
     if not "Admin" in caller_roles:
         raise PermissionDenied

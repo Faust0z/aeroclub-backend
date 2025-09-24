@@ -1,6 +1,6 @@
 from app.models.roles import Roles
 from .users import get_user_by_email_srv
-from ..errors import UserNotFound, RoleNotFound
+from ..errors import RoleNotFound
 from ..extensions import db
 
 
@@ -9,20 +9,19 @@ def get_roles_srv() -> list[Roles]:
 
 
 def get_role_by_name_srv(name: str) -> Roles:
-    return db.session.scalar_one_or_none(db.select(Roles).where(Roles.name == name))
+    role = db.session.scalar_one_or_none(db.select(Roles).where(Roles.name == name))
+    if not role:
+        raise RoleNotFound
+    return role
 
 
 def get_user_roles_srv(email: str) -> list[Roles]:
     user = get_user_by_email_srv(email=email)
-    if not user:
-        raise UserNotFound
     return user.roles
 
 
 def add_user_role_srv(email: str, role: Roles) -> list[Roles]:
     user = get_user_by_email_srv(email=email)
-    if not user:
-        raise UserNotFound
 
     if role not in user.roles:
         user.roles.append(role)
@@ -32,8 +31,6 @@ def add_user_role_srv(email: str, role: Roles) -> list[Roles]:
 
 def del_user_role_srv(email: str, role: Roles) -> list[Roles]:
     user = get_user_by_email_srv(email=email)
-    if not user:
-        raise UserNotFound
 
     if not role in user.roles:
         raise RoleNotFound
