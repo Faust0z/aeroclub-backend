@@ -30,7 +30,7 @@ def get_flight_sessions_srv(flight_session_identifier: int | None = None, plane_
         if user_last_name:
             stmt = stmt.where(Users.last_name.ilike(f"%{user_last_name}%"))
     if plane_registration:
-        stmt = stmt.join(FlightSessions.itinerary).join(Itineraries.plane)
+        stmt = stmt.join(FlightSessions.itineraries).join(Itineraries.plane)
         stmt = stmt.where(Planes.registration.ilike(f"%{plane_registration}%"))
     if starting_date and limit_date:
         stmt = stmt.where(db.and_(FlightSessions.issued_date >= starting_date, FlightSessions.issued_date <= limit_date))
@@ -46,14 +46,15 @@ def get_flight_sessions_srv(flight_session_identifier: int | None = None, plane_
 
 # This method does not use the get_user_by_email_srv method as the rest in order to eager load the flight_sessions
 def get_user_flight_sessions_srv(email: str) -> list[FlightSessions]:
-    user = db.session.scalar_one_or_none(
+    user = db.session.execute(
         db.select(Users)
         .options(
-            joinedload(Users.flight_sessions).joinedload(FlightSessions.itinerary).joinedload(Itineraries.plane),
-            joinedload(Users.flight_sessions).joinedload(FlightSessions.itinerary).joinedload(Itineraries.airport_codes),
+            joinedload(Users.flight_sessions).joinedload(FlightSessions.itineraries).joinedload(Itineraries.plane),
+            joinedload(Users.flight_sessions).joinedload(FlightSessions.itineraries).joinedload(Itineraries.airport_codes),
             joinedload(Users.flight_sessions).joinedload(FlightSessions.users)
         )
         .where(Users.email == email)
+        .scalar_one_or_none()
     )
     if not user:
         raise UserNotFound
@@ -62,14 +63,15 @@ def get_user_flight_sessions_srv(email: str) -> list[FlightSessions]:
 
 # This method does not use the get_user_by_email_srv method as the rest in order to eager load the flight_sessions
 def get_flight_session_by_identifier_srv(flight_session_identifier: int) -> FlightSessions:
-    flight_session = db.session.scalar_one_or_none(
+    flight_session = db.session.execute(
         db.select(FlightSessions)
         .options(
-            joinedload(FlightSessions.itinerary).joinedload(Itineraries.plane),
-            joinedload(FlightSessions.itinerary).joinedload(Itineraries.airport_codes),
+            joinedload(FlightSessions.itineraries).joinedload(Itineraries.plane),
+            joinedload(FlightSessions.itineraries).joinedload(Itineraries.airport_codes),
             joinedload(FlightSessions.users)
         )
         .where(FlightSessions.flight_session_identifier == flight_session_identifier)
+        .scalar_one_or_none()
     )
     if not flight_session:
         raise FlightSessionNotFound

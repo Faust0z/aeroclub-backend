@@ -14,8 +14,8 @@ class FlightSessions(db.Model):
 
     users: db.Mapped[list["Users"]] = db.relationship("Users", secondary=users_have_flight_sessions,
                                                       back_populates="flight_sessions")
-    transaction: db.Mapped[list["Transactions"]] = db.relationship(back_populates="flight_sessions")
-    itinerary: db.Mapped[list["Itineraries"]] = db.relationship(back_populates="flight_sessions")
+    transactions: db.Mapped[list["Transactions"]] = db.relationship(back_populates="flight_sessions")
+    itineraries: db.Mapped[list["Itineraries"]] = db.relationship(back_populates="flight_sessions")
 
     def __repr__(self):
         return f"<issued_date={self.issued_date} flight_session_identifier={self.flight_session_identifier}>"

@@ -13,6 +13,8 @@ class AirportCodesSchema(SQLAlchemyAutoSchema):
         include_fk = False
         exclude = ("id", "itineraries",)
 
+    code = auto_field(required=True)
+
 
 class BalancesSchema(SQLAlchemyAutoSchema):
     class Meta:

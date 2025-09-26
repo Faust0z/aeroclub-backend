@@ -18,7 +18,7 @@ class Users(db.Model):
     address: db.Mapped[str] = db.Column(db.String)
     status: db.Mapped[bool] = db.Column(db.Boolean, nullable=False)
 
-    balance: db.Mapped["Balances"] = db.relationship(back_populates="users")
+    balance: db.Mapped["Balances"] = db.relationship(back_populates="user")
     roles: db.Mapped[list["Roles"]] = db.relationship("Roles", secondary=users_have_roles, back_populates="users")
     flight_sessions: db.Mapped[list["FlightSessions"]] = db.relationship("FlightSessions",
                                                                          secondary=users_have_flight_sessions,

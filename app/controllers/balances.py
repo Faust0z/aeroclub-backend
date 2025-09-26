@@ -40,7 +40,7 @@ def get_user_balance_endp(email: str):
 
 @balances_bp.get("/me")
 @jwt_required()
-def get_user_balance_endp():
+def get_my_balance_endp():
     jwt_data = get_jwt()
     if not jwt_data.get("status", True):
         raise PermissionDeniedDisabledUser

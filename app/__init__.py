@@ -43,10 +43,5 @@ def create_app():
     app.register_blueprint(roles_bp)
     app.register_blueprint(transactions_bp)
     app.register_blueprint(users_bp)
-    app.register_blueprint(planes_bp)
-    app.register_blueprint(roles_bp)
-    app.register_blueprint(invoices_bp)
-    app.register_blueprint(transactions_bp)
-    app.register_blueprint(balances_bp)
 
     return app

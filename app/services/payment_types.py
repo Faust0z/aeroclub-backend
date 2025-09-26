@@ -10,7 +10,7 @@ def get_payment_types_srv() -> list[PaymentTypes]:
 
 
 def get_payment_type_by_name_srv(name: str) -> PaymentTypes:
-    payment_type = db.session.scalar_one_or_none(db.select(PaymentTypes).where(PaymentTypes.type == name))
+    payment_type = db.session.execute(db.select(PaymentTypes).where(PaymentTypes.type == name)).scalar_one_or_none()
     if not payment_type:
         raise PaymentTypeNotFound
     return payment_type

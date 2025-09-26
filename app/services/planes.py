@@ -23,7 +23,7 @@ def get_planes_srv(brand: str | None = None, registration: str | None = None, ca
 
 
 def get_plane_by_registration_srv(registration: str) -> Planes:
-    plane = db.session.scalar_one_or_none(db.select(Planes).where(Planes.registration == registration))
+    plane = db.session.execute(db.select(Planes).where(Planes.registration == registration)).scalar_one_or_none()
     if not plane:
         raise PlaneNotFound
     return plane

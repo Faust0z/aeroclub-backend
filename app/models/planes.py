@@ -13,9 +13,9 @@ class Planes(db.Model):
     description: db.Mapped[str] = db.mapped_column(db.Text)
     plane_status_id: db.Mapped[int] = db.mapped_column(db.ForeignKey('plane_status.id'))
 
-    fare: db.Mapped["Fares"] = db.relationship(back_populates="planes")
-    itinerary: db.Mapped[list["Itineraries"]] = db.relationship(back_populates="planes")
-    plane_status: db.Mapped["PlaneStatus"] = db.relationship(back_populates="planes")
+    fare: db.Mapped["Fares"] = db.relationship(back_populates="plane")
+    itinerary: db.Mapped[list["Itineraries"]] = db.relationship(back_populates="plane")
+    plane_status: db.Mapped["PlaneStatus"] = db.relationship(back_populates="plane")
 
     def __repr__(self):
         return (f"<Plane "

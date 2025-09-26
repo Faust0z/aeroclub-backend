@@ -10,7 +10,7 @@ def get_planes_status_srv() -> list[PlaneStatus]:
 
 
 def get_plane_status_by_name_srv(name: str) -> PlaneStatus:
-    plane_status = db.session.scalar_one_or_none(db.select(PlaneStatus).where(PlaneStatus.state == name))
+    plane_status = db.session.execute(db.select(PlaneStatus).where(PlaneStatus.state == name)).scalar_one_or_none()
     if not plane_status:
         raise PlaneStatusNotFound
     return plane_status

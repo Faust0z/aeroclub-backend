@@ -10,7 +10,7 @@ def get_airport_codes_srv() -> list[AirportCodes]:
 
 
 def get_airport_code_by_code_srv(code: str) -> AirportCodes:
-    airport_code = db.session.scalar_one_or_none(db.select(AirportCodes).where(AirportCodes.type == code))
+    airport_code = db.session.execute(db.select(AirportCodes).where(AirportCodes.type == code)).scalar_one_or_none()
     if not airport_code:
         raise AirportCodeNotFound
     return airport_code
