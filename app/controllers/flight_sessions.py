@@ -1,5 +1,6 @@
 from flask import Blueprint, request
 from flask_jwt_extended import jwt_required, get_jwt
+from marshmallow import ValidationError
 
 from app.errors import PermissionDenied, PermissionDeniedDisabledUser
 from app.schemas import FlightSessionsSchema, FlightSessionsAdminSchema
@@ -93,7 +94,10 @@ def create_flight_sessions_endp():
 
     schema = FlightSessionsAdminSchema(session=db.session)
 
-    data = schema.load(request.get_json())
+    try:
+        data = schema.load(request.get_json())
+    except ValidationError as err:
+        return {"errors": err.messages}, 400
     user_email = data.get("user_email")
     instructor_email = data.get("instructor_email")
     admin_email = jwt_data["sub"]

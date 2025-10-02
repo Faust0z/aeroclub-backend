@@ -2,10 +2,12 @@ from datetime import timedelta
 
 from flask import Blueprint, request
 from flask_jwt_extended import get_jwt, create_access_token, jwt_required
+from marshmallow import ValidationError
 
 from ..errors import PermissionDenied, BadAuthRequest, PermissionDeniedDisabledUser
 from ..extensions import db
-from ..schemas import UsersRegisterSchema, UsersSchema, UsersAdminSchema, UsersInstructorSchema, UsersUpdateSchema
+from ..schemas import UsersRegisterSchema, UsersSchema, UsersAdminSchema, UsersInstructorSchema, UsersUpdateSchema, \
+    UsersAdminUpdateSchema
 from ..services.users import get_users_srv, register_user_srv, update_user_srv, disable_user_srv, authenticate_user_srv, \
     get_user_by_email_srv
 
@@ -66,9 +68,9 @@ def get_user_by_email_endp(email: str):
 
     caller_roles = jwt_data.get("roles", ["User"])
     if "Admin" in caller_roles:
-        schema = UsersAdminSchema(many=True)
+        schema = UsersAdminSchema()
     elif "Instructor" in caller_roles:
-        schema = UsersInstructorSchema(many=True)
+        schema = UsersInstructorSchema()
     else:
         raise PermissionDenied
 
@@ -84,13 +86,19 @@ def update_user_endp(email: str):
     if not jwt_data.get("status", True):
         raise PermissionDeniedDisabledUser
 
+    user_email = jwt_data["sub"]
     caller_roles = jwt_data.get("roles", ["User"])
     if "Admin" in caller_roles:
-        schema = UsersAdminSchema(session=db.session, partial=True)
+        schema = UsersAdminUpdateSchema(partial=True)
+    elif user_email == email:
+        schema = UsersUpdateSchema(partial=True)
     else:
-        schema = UsersUpdateSchema(session=db.session, partial=True)
+        raise PermissionDenied
 
-    data = schema.load(request.get_json())
+    try:
+        data = schema.load(request.get_json())
+    except ValidationError as err:
+        return {"errors": err.messages}, 400
     user = update_user_srv(email=email, data=data)
 
     return {"data": schema.dump(user)}, 200
@@ -107,13 +115,16 @@ def delete_user_endp(email: str):
     user = disable_user_srv(email=email)
 
     schema = UsersAdminSchema()
-    return {"data": schema.dump(user)}, 204
+    return {"data": schema.dump(user)}, 200
 
 
 @users_bp.post("/register")
 def register_user_endp():
     schema = UsersRegisterSchema(session=db.session)
-    data = schema.load(request.get_json())
+    try:
+        data = schema.load(request.get_json())
+    except ValidationError as err:
+        return {"errors": err.messages}, 400
 
     user = register_user_srv(user=data)
     return {"data": schema.dump(user)}, 201

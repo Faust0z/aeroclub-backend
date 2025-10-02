@@ -1,10 +1,10 @@
-from datetime import date
+from datetime import date, datetime, UTC
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from .roles import get_role_by_name_srv
+from .roles import get_role_by_name_srv, add_user_role_srv
 from ..errors import EmailAlreadyExists, UserNotFound, AuthError
 from ..extensions import db
 from ..models import Users, Roles, Balances
@@ -33,19 +33,25 @@ def get_user_by_email_srv(email: str = None, include_roles: bool = False) -> Use
     if include_roles:
         stmt = stmt.options(joinedload(Users.roles))
 
-    user = db.session.execute(stmt).scalar_one_or_none()
+    user = db.session.execute(stmt).unique().scalar_one_or_none()
     if not user:
         raise UserNotFound
     return user
 
 
-def update_user_srv(email: str, data: Users) -> Users:
-    user = get_user_by_email_srv(email)
+def update_user_srv(email: str, data: dict) -> Users:
+    user = get_user_by_email_srv(email=email)
 
     try:
         for key, value in data.items():
-            if hasattr(user, key):
+            if key == "roles":
+                for r in value:
+                    # Expecting: [{"name": "User"}, {"name": "Admin"}]
+                    role = get_role_by_name_srv(r["name"])
+                    add_user_role_srv(email=user.email, role=role)
+            elif hasattr(user, key):
                 setattr(user, key, value)
+
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
@@ -57,6 +63,7 @@ def disable_user_srv(email) -> Users:
     user = get_user_by_email_srv(email)
 
     user.status = False
+    user.disabled_at = datetime.now(UTC)
     db.session.commit()
     return user
 

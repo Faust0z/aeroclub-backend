@@ -1,8 +1,9 @@
 from flask import Blueprint, request
 from flask_jwt_extended import jwt_required, get_jwt
+from marshmallow import ValidationError
 
 from app.errors import PermissionDeniedDisabledUser, PermissionDenied
-from app.schemas import PlanesSchema
+from app.schemas import PlanesSchema, PlanesUpdateSchema
 from app.services.planes import get_planes_srv, create_plane_srv, update_plane_srv, get_plane_by_registration_srv
 from ..extensions import db
 
@@ -44,7 +45,10 @@ def create_plane_endp():
         raise PermissionDenied
 
     schema = PlanesSchema(session=db.session)
-    data = schema.load(request.get_json())
+    try:
+        data = schema.load(request.get_json())
+    except ValidationError as err:
+        return {"errors": err.messages}, 400
 
     plane = create_plane_srv(data)
     return {"data": schema.dump(plane)}, 201
@@ -58,8 +62,11 @@ def update_plane_endp(registration: str):
     if not "Admin" in caller_roles:
         raise PermissionDenied
 
-    schema = PlanesSchema(session=db.session)
-    data = schema.load(request.get_json())
+    schema = PlanesUpdateSchema(partial=True)
+    try:
+        data = schema.load(request.get_json())
+    except ValidationError as err:
+        return {"errors": err.messages}, 400
     plane = update_plane_srv(registration=registration, data=data)
 
     return {"data": schema.dump(plane)}, 200

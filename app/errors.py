@@ -82,7 +82,7 @@ class UserNotFound(NotFound):
 
 
 class RoleNotFound(NotFound):
-    description = "The given user does not posses the requested role"
+    description = "Role not found"
 
 
 def register_error_handlers(app: Flask) -> None:

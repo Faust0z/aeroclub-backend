@@ -10,13 +10,13 @@ def get_airport_codes_srv() -> list[AirportCodes]:
 
 
 def get_airport_code_by_code_srv(code: str) -> AirportCodes:
-    airport_code = db.session.execute(db.select(AirportCodes).where(AirportCodes.type == code)).scalar_one_or_none()
+    airport_code = db.session.execute(db.select(AirportCodes).where(AirportCodes.code == code)).scalar_one_or_none()
     if not airport_code:
         raise AirportCodeNotFound
     return airport_code
 
 
-def update_airport_code_srv(code: str, data: AirportCodes) -> AirportCodes:
+def update_airport_code_srv(code: str, data: dict) -> AirportCodes:
     airport_code = get_airport_code_by_code_srv(code=code)
     try:
         for key, value in data.items():

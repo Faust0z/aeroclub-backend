@@ -16,7 +16,7 @@ def get_plane_status_by_name_srv(name: str) -> PlaneStatus:
     return plane_status
 
 
-def update_plane_status_srv(name: str, data: PlaneStatus) -> PlaneStatus:
+def update_plane_status_srv(name: str, data: dict) -> PlaneStatus:
     plane_status = get_plane_status_by_name_srv(name=name)
     try:
         for key, value in data.items():

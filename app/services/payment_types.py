@@ -16,7 +16,7 @@ def get_payment_type_by_name_srv(name: str) -> PaymentTypes:
     return payment_type
 
 
-def update_payment_type_srv(name: str, data: PaymentTypes) -> PaymentTypes:
+def update_payment_type_srv(name: str, data: dict) -> PaymentTypes:
     payment_type = get_payment_type_by_name_srv(name=name)
     try:
         for key, value in data.items():

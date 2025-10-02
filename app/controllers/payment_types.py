@@ -1,9 +1,10 @@
 from flask import Blueprint, request
 from flask_jwt_extended import jwt_required, get_jwt
+from marshmallow import ValidationError
 
 from ..errors import PermissionDeniedDisabledUser, PermissionDenied
 from ..extensions import db
-from ..schemas import PaymentTypesSchema
+from ..schemas import PaymentTypesSchema, PaymentTypesUpdateSchema
 from ..services.payment_types import get_payment_types_srv, update_payment_type_srv
 
 payment_types_bp = Blueprint("payment_types", __name__, url_prefix="/v1/payment_types")
@@ -22,7 +23,7 @@ def get_payment_types_endp():
     return {"data": schema.dump(payment_types)}, 200
 
 
-@payment_types_bp.put("/<string:name>")
+@payment_types_bp.patch("/<string:name>")
 @jwt_required()
 def update_payment_type_endp(name: str):
     jwt_data = get_jwt()
@@ -30,7 +31,10 @@ def update_payment_type_endp(name: str):
     if not "Admin" in caller_roles:
         raise PermissionDenied
 
-    schema = PaymentTypesSchema(session=db.session, partial=True)
-    data = schema.load(request.get_json())
+    schema = PaymentTypesUpdateSchema(session=db.session, partial=True)
+    try:
+        data = schema.load(request.get_json())
+    except ValidationError as err:
+        return {"errors": err.messages}, 400
     payment_type = update_payment_type_srv(name=name, data=data)
     return {"data": schema.dump(payment_type)}, 200

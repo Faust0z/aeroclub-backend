@@ -41,7 +41,7 @@ def create_plane_srv(plane: Planes) -> Planes:
     return plane
 
 
-def update_plane_srv(registration: str, data: Planes) -> Planes:
+def update_plane_srv(registration: str, data: dict) -> Planes:
     plane = get_plane_by_registration_srv(registration=registration)
 
     try:

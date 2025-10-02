@@ -1,9 +1,9 @@
 from flask import Blueprint, request
 from flask_jwt_extended import jwt_required, get_jwt
+from marshmallow import ValidationError
 
 from ..errors import PermissionDeniedDisabledUser, PermissionDenied
-from ..extensions import db
-from ..schemas import PlaneStatusSchema
+from ..schemas import PlaneStatusSchema, PlaneStatusUpdateSchema
 from ..services.plane_status import get_planes_status_srv, update_plane_status_srv
 
 plane_status_bp = Blueprint("plane_status", __name__, url_prefix="/v1/plane_status")
@@ -22,7 +22,7 @@ def get_plane_status_endp():
     return {"data": schema.dump(plane_status)}, 200
 
 
-@plane_status_bp.put("/<string:name>")
+@plane_status_bp.patch("/<string:name>")
 @jwt_required()
 def update_plane_status_endp(name: str):
     jwt_data = get_jwt()
@@ -30,7 +30,10 @@ def update_plane_status_endp(name: str):
     if not "Admin" in caller_roles:
         raise PermissionDenied
 
-    schema = PlaneStatusSchema(session=db.session, partial=True)
-    data = schema.load(request.get_json())
+    schema = PlaneStatusUpdateSchema(partial=True)
+    try:
+        data = schema.load(request.get_json())
+    except ValidationError as err:
+        return {"errors": err.messages}, 400
     plane_status = update_plane_status_srv(name=name, data=data)
     return {"data": schema.dump(plane_status)}, 200

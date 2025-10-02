@@ -65,6 +65,18 @@ class ItinerariesSchema(SQLAlchemyAutoSchema):
     airport_codes = fields.Nested(AirportCodesSchema, many=True)
 
 
+class AirportCodesUpdateSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = AirportCodes
+        load_instance = False
+        include_fk = False
+        exclude = ()
+
+    id = auto_field(dump_only=True)
+    code = auto_field(required=True)
+    itineraries = fields.Nested(ItinerariesSchema, many=True, dump_only=True)
+
+
 class FlightSessionsSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = FlightSessions
@@ -115,10 +127,31 @@ class PaymentTypesSchema(SQLAlchemyAutoSchema):
     details = auto_field(required=False, allow_none=True)
 
 
+class PaymentTypesUpdateSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = PaymentTypes
+        load_instance = False
+        include_fk = False
+        exclude = ("id",)
+
+    type = auto_field(required=False)
+    details = auto_field(required=False, allow_none=True)
+
+
 class PlaneStatusSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = PlaneStatus
         load_instance = True
+        include_fk = False
+        exclude = ("id",)
+
+    state = auto_field(required=True)
+
+
+class PlaneStatusUpdateSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = PlaneStatus
+        load_instance = False
         include_fk = False
         exclude = ("id",)
 
@@ -141,6 +174,22 @@ class PlanesSchema(SQLAlchemyAutoSchema):
     description = auto_field(required=False, allow_none=True)
 
 
+class PlanesUpdateSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Planes
+        load_instance = False
+        include_fk = False
+        exclude = ("id",)
+
+    brand = auto_field(required=False)
+    model = auto_field(required=False)
+    registration = auto_field(required=False)
+    category = auto_field(required=False)
+    acquisition_date = auto_field(required=False, allow_none=True)
+    consumption_per_hour = auto_field(required=False)
+    description = auto_field(required=False, allow_none=True)
+
+
 class RolesSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = Roles
@@ -151,17 +200,25 @@ class RolesSchema(SQLAlchemyAutoSchema):
     name = auto_field(required=True, dump_only=True)
 
 
-# So admins can CRUD roles
-class RolesAdminSchema(SQLAlchemyAutoSchema):
+class RolesUserUpdateSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = Roles
-        load_instance = True
+        load_instance = False
+        include_fk = False
+        exclude = ("id", "users",)
+
+    name = auto_field(required=False, dump_only=True)
+
+
+class RolesAdminUpdateSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Roles
+        load_instance = False
         include_fk = False
         exclude = ()
 
     id = auto_field(dump_only=True)
     name = auto_field(required=False)
-    users = fields.Nested(RolesSchema, many=True, dump_only=True)
 
 
 class TransactionsSchema(SQLAlchemyAutoSchema):
@@ -174,7 +231,7 @@ class TransactionsSchema(SQLAlchemyAutoSchema):
     amount = auto_field(required=True)
     issued_date = auto_field(required=True)
     description = auto_field(required=False, allow_none=True)
-    payment_type = fields.Nested(PaymentTypesSchema, required=True)
+    payment_type = fields.Nested(PaymentTypesUpdateSchema, required=True)
 
 
 class UsersRegisterSchema(SQLAlchemyAutoSchema):
@@ -211,14 +268,35 @@ class UsersSchema(SQLAlchemyAutoSchema):
 class UsersUpdateSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = Users
-        load_instance = True
+        load_instance = False
         include_fk = False
-        exclude = ("id", "flight_sessions", "disabled_at", "status", "password",)
+        exclude = ("id", "flight_sessions", "disabled_at", "status",)
 
     first_name = auto_field(required=False)
     last_name = auto_field(required=False)
     phone_number = auto_field(required=False)
     address = auto_field(required=False, allow_none=True)
+    password = auto_field(required=False, load_only=True)
+    # plain dicts, not ORM
+    roles = fields.Nested(RolesUserUpdateSchema, many=True, dump_only=True)
+
+
+class UsersAdminUpdateSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Users
+        load_instance = False
+        include_fk = False
+        exclude = ("flight_sessions", "status",)
+
+    id = auto_field(dump_only=True)
+    first_name = auto_field(required=False)
+    last_name = auto_field(required=False)
+    phone_number = auto_field(required=False)
+    address = auto_field(required=False, allow_none=True)
+    email = auto_field(required=False)
+    password = auto_field(required=False, load_only=True)
+    # plain dicts, not ORM
+    roles = fields.List(fields.Nested(RolesAdminUpdateSchema), required=False)
 
 
 class UsersInstructorSchema(SQLAlchemyAutoSchema):
@@ -226,14 +304,13 @@ class UsersInstructorSchema(SQLAlchemyAutoSchema):
         model = Users
         load_instance = True
         include_fk = False
-        exclude = ("id", "flight_sessions", "address", "created_at", "disabled_at", "password",)
+        exclude = ("id", "flight_sessions", "address", "created_at", "disabled_at", "password", "roles")
 
     first_name = auto_field(required=True, dump_only=True)
     last_name = auto_field(required=True, dump_only=True)
     phone_number = auto_field(required=True, dump_only=True)
     email = auto_field(dump_only=True)
     status = auto_field(dump_only=True)
-    roles = fields.Nested(RolesSchema, many=True, dump_only=True)
 
 
 class UsersAdminSchema(SQLAlchemyAutoSchema):

@@ -22,7 +22,7 @@ def get_user_roles_srv(email: str) -> list[Roles]:
 
 def add_user_role_srv(email: str, role: Roles) -> list[Roles]:
     from .users import get_user_by_email_srv  # To avoid circular import issues
-    user = get_user_by_email_srv(email=email)
+    user = get_user_by_email_srv(email=email, include_roles=True)
 
     if role not in user.roles:
         user.roles.append(role)

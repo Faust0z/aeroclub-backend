@@ -1,5 +1,6 @@
 from flask import Blueprint, request
 from flask_jwt_extended import jwt_required, get_jwt
+from marshmallow import ValidationError
 
 from app.errors import PermissionDeniedDisabledUser, PermissionDenied
 from app.schemas import RolesSchema
@@ -77,6 +78,9 @@ def delete_user_role_endp(email: str):
         raise PermissionDenied
 
     schema = RolesSchema(session=db.session, many=True)
-    data = schema.load(request.get_json())
+    try:
+        data = schema.load(request.get_json())
+    except ValidationError as err:
+        return {"errors": err.messages}, 400
     roles = del_user_role_srv(email=email, role=data)
     return {"data": schema.dump(roles)}, 204
